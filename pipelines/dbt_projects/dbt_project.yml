@@ -1,0 +1,32 @@
+# dbt_project.yml
+name: 'dbt_projects'
+version: '1.0.0'
+config-version: 2
+
+profile: 'datalab' 
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Configuração de Materialização e Schemas por Pasta
+models:
+  dbt_projects:
+    bronze:
+      +materialized: view
+      +schema: bronze
+    silver:
+      +materialized: table 
+      +schema: silver
+    gold:
+      +materialized: table
+      +schema: gold
+

@@ -14,13 +14,13 @@ from cosmos import (
 )
 
 # Caminhos do ambiente
-DBT_PROJECT_DIR = "/opt/airflow/dags/pipelines/dbt_projects"
+DBT_PROJECT_DIR = "/opt/airflow/pipelines/dbt_projects"
 DBT_EXECUTABLE_PATH = "/opt/airflow/dbt_venv/bin/dbt"
-EDR_EXECUTABLE_PATH = "/opt/airflow/dbt_venv/bin/edr" # Caminho do CLI do Elementary (presume-se no mesmo venv)
+EDR_EXECUTABLE_PATH = "/opt/airflow/dbt_venv/bin/edr" 
 
 # dbt/cosmos 
 profile_config = ProfileConfig(
-    profile_name="lambda3", 
+    profile_name="datalab", 
     target_name="dev",             
     profiles_yml_filepath=f"{DBT_PROJECT_DIR}/profiles.yml"
 )
@@ -61,25 +61,25 @@ with DAG(
     # ==========================================
     t_scrap_semanal = BashOperator(
         task_id='scrap_semanal',
-        bash_command='python3 -u /opt/airflow/dags/pipelines/anp/anp_01_anp_week_file_scrap.py',
+        bash_command='python3 -u /opt/airflow/pipelines/anp/anp_01_anp_week_file_scrap.py',
         execution_timeout=timedelta(minutes=10),
     )
 
     t_etl_semanal = BashOperator(
         task_id='landing_semanal',
-        bash_command='python3 -u /opt/airflow/dags/pipelines/anp/anp_03_anp_landing_semanal.py',
+        bash_command='python3 -u /opt/airflow/pipelines/anp/anp_03_anp_landing_semanal.py',
         execution_timeout=timedelta(minutes=10),
     )
 
     t_scrap_mensal = BashOperator(
         task_id='scrap_mensal',
-        bash_command='python3 -u /opt/airflow/dags/pipelines/anp/anp_02_anp_month_file_scrap.py',
+        bash_command='python3 -u /opt/airflow/pipelines/anp/anp_02_anp_month_file_scrap.py',
         execution_timeout=timedelta(minutes=15),
     )
 
     t_etl_mensal = BashOperator(
         task_id='landing_mensal',
-        bash_command='python3 -u /opt/airflow/dags/pipelines/anp/anp_04_anp_landing_mensal.py',
+        bash_command='python3 -u /opt/airflow/pipelines/anp/anp_04_anp_landing_mensal.py',
         execution_timeout=timedelta(minutes=30),
     )
 
@@ -127,7 +127,7 @@ with DAG(
     # e grava a tabela de observabilidade (audit.dbt_runs) no PostgreSQL.
     export_dbt_logs = BashOperator(
         task_id='export_dbt_logs',
-        bash_command='python3 -u /opt/airflow/dags/pipelines/anp/anp_export_dbt_logs.py',
+        bash_command='python3 -u /opt/airflow/pipelines/anp/anp_export_dbt_logs.py',
         execution_timeout=timedelta(minutes=5),
         # IMPORTANTE: Garante que os logs sejam salvos mesmo se algum modelo do dbt falhar
         trigger_rule=TriggerRule.ALL_DONE
