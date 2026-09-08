@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: datalab
+      POSTGRES_PASSWORD: datalab
+      POSTGRES_DB: datalab
+    ports:
+      - "5432:5432"
+    volumes:
+      # Caminho relativo para manter os dados no repositório local (adicionar no .gitignore)
+      - ./datalake/postgres_data:/var/lib/postgresql/data
+    restart: always
+
+
+    # Inicializador automático do Airflow (Roda apenas uma vez)
+  airflow-init:
+    build: .
+    container_name: airflow_init
+    depends_on:
+      postgres:
+        condition: service_started
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://datalab:datalab@postgres:5432/datalab
+    command: >
+      bash -c "
+      airflow db migrate &&
+      airflow users create --username datalab --password datalab --firstname Admin --lastname User --role Admin --email admin@example.org
+      "
+
+  # Apache Airflow (Webserver)
+  airflow-webserver:
+    build: . # Certifique-se de ter o Dockerfile na pasta lab1 para instalar o Polars e dependências
+    container_name: airflow_webserver
+    restart: always
+    user: "1000:0"
+    depends_on:
+      - postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://datalab:datalab@postgres:5432/datalab
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: 'America/Sao_Paulo'
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./datasource:/mnt/datasource
+      - ./pipelines:/opt/airflow/pipelines
+    command: webserver
+
+  # Apache Airflow (Scheduler)
+  airflow-scheduler:
+    build: .
+    container_name: airflow_scheduler
+    restart: always
+    user: "1000:0"
+    depends_on:
+      - airflow-webserver
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://datalab:datalab@postgres:5432/datalab
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: 'America/Sao_Paulo'
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./datasource:/mnt/datasource
+      - ./pipelines:/opt/airflow/pipelines
+    command: scheduler
+
+  # DATA LAKE STORAGE: MINIO (S3 COMPATIBLE)
+  minio:
+    image: minio/minio:latest
+    container_name: minio_datalake
+    ports:
+      - "9005:9000"
+      - "9091:9001"
+    environment:
+      - MINIO_ROOT_USER=datalabs
+      - MINIO_ROOT_PASSWORD=datalabs
+    volumes:
+      - ./datalake/minio_data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped

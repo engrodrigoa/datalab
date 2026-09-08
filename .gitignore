@@ -1,0 +1,8 @@
+configs/
+airflow/logs/
+datasource/*.csv
+datasource/*.parquet
+datasource/*.json
+__pycache__/
+*.pyc
+.env
