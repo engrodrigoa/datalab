@@ -89,3 +89,11 @@ services:
       - ./datalake/minio_data:/data
     command: server /data --console-address ":9001"
     restart: unless-stopped
+
+
+  adminer:
+    image: adminer:latest
+    container_name: adminer
+    ports:
+      - "8081:8080"
+    restart: always
