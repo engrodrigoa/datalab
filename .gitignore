@@ -1,4 +1,4 @@
-configs/
+datalake/
 airflow/logs/
 datasource/*.csv
 datasource/*.parquet
