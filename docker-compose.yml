@@ -16,7 +16,7 @@ services:
     restart: always
 
 
-    # Inicializador automático do Airflow (Roda apenas uma vez)
+    # init do airflow
   airflow-init:
     build: .
     container_name: airflow_init
