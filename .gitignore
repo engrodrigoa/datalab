@@ -1,8 +1,6 @@
 datalake/
 airflow/logs/
-datasource/*.csv
-datasource/*.parquet
-datasource/*.json
+datasource/
 __pycache__/
 *.pyc
 .env
