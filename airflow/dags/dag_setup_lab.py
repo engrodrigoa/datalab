@@ -1,0 +1,117 @@
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.providers.postgres.operators.postgres import PostgresOperator
+
+default_args = {
+    'owner': 'datalab',
+    'depends_on_past': False,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=2),
+}
+
+with DAG(
+    dag_id='dag_setup_infrastructure',
+    default_args=default_args,
+    description='infrastructure setup',
+    schedule_interval=None,  
+    start_date=datetime(2026, 1, 1),
+    catchup=False,
+    tags=['setup', 'polars' 'ddl', 'anp'],
+) as dag:
+
+    # ==========================================
+    # schemas
+    # ==========================================
+    create_schemas = PostgresOperator(
+        task_id='create_schemas',
+        postgres_conn_id='postgres_default', 
+        sql="""
+            CREATE SCHEMA IF NOT EXISTS ctrl;
+            CREATE SCHEMA IF NOT EXISTS bronze;
+            CREATE SCHEMA IF NOT EXISTS silver;
+            CREATE SCHEMA IF NOT EXISTS gold;
+        """,
+    )
+
+    # ==========================================
+    # control tables
+    # ==========================================
+    create_ctrl_tables = PostgresOperator(
+        task_id='create_ctrl_tables',
+        postgres_conn_id='postgres_default',
+        sql="""
+            CREATE TABLE IF NOT EXISTS ctrl.anp_metadata_mensal (
+                cat varchar(20) NOT NULL,
+                "ref" varchar(6) NOT NULL,
+                "month" int4 NOT NULL,
+                "year" int4 NOT NULL,
+                file_name varchar(255) NOT NULL,
+                url_source text NOT NULL,
+                download_date timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+                link_name varchar(30) NULL,
+                CONSTRAINT pk_control_anp PRIMARY KEY (cat, ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS ctrl.anp_metadata_semanal (
+                data_ref date NULL,
+                data_dag_run timestamp NULL,
+                status varchar NULL
+            );
+        """,
+    )
+
+    # ==========================================
+    # bronze tables
+    # ==========================================
+    create_bronze_tables = PostgresOperator(
+        task_id='create_bronze_tables',
+        postgres_conn_id='postgres_default',
+        sql="""
+            CREATE TABLE IF NOT EXISTS bronze.anp_landing_mensal (
+                regiao_sigla text NULL,
+                estado_sigla text NULL,
+                municipio text NULL,
+                revenda text NULL,
+                cnpj_da_revenda text NULL,
+                nome_da_rua text NULL,
+                numero_rua text NULL,
+                complemento text NULL,
+                bairro text NULL,
+                cep text NULL,
+                produto text NULL,
+                data_da_coleta text NULL,
+                valor_de_venda text NULL,
+                valor_de_compra text NULL,
+                unidade_de_medida text NULL,
+                bandeira text NULL,
+                arquivo text NULL,
+                ingestion_timestamp timestamp NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS bronze.anp_landing_semanal (
+                regiao_sigla text NULL,
+                estado_sigla text NULL,
+                municipio text NULL,
+                revenda text NULL,
+                cnpj_da_revenda text NULL,
+                nome_da_rua text NULL,
+                numero_rua text NULL,
+                complemento text NULL,
+                bairro text NULL,
+                cep text NULL,
+                produto text NULL,
+                data_da_coleta text NULL,
+                valor_de_venda text NULL,
+                valor_de_compra text NULL,
+                unidade_de_medida text NULL,
+                bandeira text NULL,
+                arquivo text NULL,
+                ingestion_timestamp timestamp NULL
+            );
+        """,
+    )
+
+    # ==========================================
+    # flow
+    # ==========================================
+    create_schemas >> create_ctrl_tables >> create_bronze_tables

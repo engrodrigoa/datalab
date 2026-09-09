@@ -15,7 +15,7 @@ WITH base_silver AS (
         valor_venda,
         valor_compra,
         data_coleta
-    FROM {{ ref('silver_anp_precos') }}
+    FROM {{ ref('anp_combustivel') }}
     
     {% if is_incremental() %}
         WHERE data_coleta >= (

@@ -33,17 +33,20 @@ services:
 
   # Apache Airflow (Webserver)
   airflow-webserver:
-    build: . # Certifique-se de ter o Dockerfile na pasta lab1 para instalar o Polars e dependências
+    build: . 
     container_name: airflow_webserver
     restart: always
     user: "1000:0"
     depends_on:
       - postgres
+    env_file:
+      - .env
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://datalab:datalab@postgres:5432/datalab
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__CORE__DEFAULT_TIMEZONE: 'America/Sao_Paulo'
+      AIRFLOW_CONN_POSTGRES_DEFAULT: postgresql://datalab:datalab@postgres:5432/datalab
     ports:
       - "8080:8080"
     volumes:
@@ -62,11 +65,14 @@ services:
     user: "1000:0"
     depends_on:
       - airflow-webserver
+    env_file:
+      - .env
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://datalab:datalab@postgres:5432/datalab
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__CORE__DEFAULT_TIMEZONE: 'America/Sao_Paulo'
+      AIRFLOW_CONN_POSTGRES_DEFAULT: postgresql://datalab:datalab@postgres:5432/datalab
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs

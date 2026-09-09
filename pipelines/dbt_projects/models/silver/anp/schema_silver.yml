@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: silver_anp_precos
+  - name: anp_combustivel
     description: "Tabela consolidada, tipada e deduplicada de preços de combustíveis da ANP (Mensal + Semanal)."
     columns:
       - name: chave

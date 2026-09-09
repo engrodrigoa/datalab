@@ -10,12 +10,12 @@ import polars as pl
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 
-# Carrega as variáveis do arquivo .env
+
 load_dotenv()
 filterwarnings("ignore")
 
 #####################################
-# 1. CONFIGURAÇÕES E CREDENCIAIS
+# SETUP INIT
 #####################################
 URL_ANP = "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/serie-historica-de-precos-de-combustiveis"
 HEADERS_WEB = {
@@ -28,14 +28,14 @@ LINKS_DOWNLOAD = {
     "ultimas-4-semanas-glp.csv": "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/arquivos/shpc/qus/ultimas-4-semanas-glp.csv"
 }
 
-# Diretório local mapeado no Docker onde os arquivos serão salvos
+# FILES LANDING
 DIR_LANDING = "/mnt/datasource/anp/ult4"
 
-# Trava de Segurança: Credenciais seguras vindas do .env
+# FAIL FAST CREDENCIALS
 REQUIRED_PG_VARS = ["DB_HOST", "DB_PORT", "DB_USER", "DB_PASS", "DB_NAME"]
 missing_vars = [var for var in REQUIRED_PG_VARS if not os.getenv(var)]
 if missing_vars:
-    print(f"[ERRO FATAL] Variáveis de banco ausentes no .env: {', '.join(missing_vars)}")
+    print(f"[FAIL] no credencials vars on .env {', '.join(missing_vars)}")
     sys.exit(1)
 
 DB_HOST = os.getenv("DB_HOST")
@@ -43,27 +43,24 @@ DB_PORT = os.getenv("DB_PORT", "5432")
 DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
 DB_NAME = os.getenv("DB_NAME")
-SCHEMA = "bronze"
-TABELA = "anp_metadata"
+SCHEMA = "ctrl"
+TABELA = "anp_metadata_semanal"
 
 CONSTRING = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 #####################################
-# 2. FUNÇÕES DE PROCESSAMENTO
+# PROCESSING FUNCTIONS
 #####################################
 def ler_ultima_data_banco(string_conexao, schema, tabela):
-    """Consulta o banco para verificar a última data de referência processada."""
     try:
         df_metadata = pl.read_database_uri(f"SELECT * FROM {schema}.{tabela}", uri=string_conexao)
         if not df_metadata.is_empty() and "data_ref" in df_metadata.columns:
             return df_metadata.select(pl.col('data_ref').max()).item()
         return None
     except Exception:
-        # Se a tabela não existir ou estiver vazia, retorna None para forçar a carga
         return None
 
 def obter_data_atualizacao_site(url, headers):
-    """Faz scraping na página da ANP para extrair a data da última atualização."""
     response = requests.get(url, headers=headers, timeout=15)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -75,10 +72,9 @@ def obter_data_atualizacao_site(url, headers):
     )
     if padrao:
         return datetime.strptime(padrao.group(1), "%d/%m/%Y").date()
-    raise ValueError("Data de atualização não encontrada via regex no HTML.")
+    raise ValueError("data não encontrada.")
 
 def download_csv_local(links, diretorio_destino):
-    """Baixa os arquivos CSV e salva diretamente no diretório local em blocos."""
     os.makedirs(diretorio_destino, exist_ok=True)
     
     for nome_arquivo, link_url in links.items():
@@ -93,7 +89,6 @@ def download_csv_local(links, diretorio_destino):
                 out_file.write(chunk)
 
 def registrar_metadado_banco(data_site, status, schema, tabela, string_conexao):
-    """Grava o status de execução e a data de referência no PostgreSQL."""
     engine = create_engine(string_conexao)
     df_resultado = pl.DataFrame([{
         'data_ref': data_site,
@@ -109,43 +104,43 @@ def registrar_metadado_banco(data_site, status, schema, tabela, string_conexao):
     engine.dispose()
 
 #####################################
-# 3. ORQUESTRAÇÃO PRINCIPAL
+# DATA FLOW
 #####################################
 def main():
-    print(f"--- Iniciando Extrator ANP (Web -> Local): {datetime.now()} ---")
+    print(f">>> --- Iniciando Extrator ANP (Web -> Local): {datetime.now()} ---")
     
     try:
         data_site = obter_data_atualizacao_site(URL_ANP, HEADERS_WEB)
-        print(f" -> Data identificada no site da ANP: {data_site}")
+        print(f" >>>[GET] date recovered from anp {data_site}")
     except Exception as e:
-        print(f"[ERRO FATAL] Falha no scraping: {e}")
+        print(f">>>[FAIL] scrapping fail: {e}")
         sys.exit(1)
         
     ultima_data_banco = ler_ultima_data_banco(CONSTRING, SCHEMA, TABELA)
-    print(f" -> Última data processada no PostgreSQL: {ultima_data_banco}")
+    print(f" >>> lasdate run {ultima_data_banco}")
 
     # Condição de idempotência
     if ultima_data_banco is not None and data_site <= ultima_data_banco:
-        print("[SKIP] Dados já atualizados no Data Warehouse. Nenhuma carga necessária.")
-        sys.exit(99) # Código 99 para indicar skip lógico na DAG do Airflow
+        print(">>> [SKIP] already up-to-date.")
+        sys.exit(99) 
         
     try:
-        print(f"\n[Etapa 1/2] Realizando download dos CSVs para {DIR_LANDING}...")
+        print(f"\n>>> [STEP 1/2] downloading files on {DIR_LANDING}...")
         download_csv_local(LINKS_DOWNLOAD, DIR_LANDING)
         
-        print("\n[Etapa 2/2] Registrando metadados de sucesso no PostgreSQL...")
+        print("\n>>>[STEP 2/2] writing successs")
         registrar_metadado_banco(data_site, 'SUCESSO', SCHEMA, TABELA, CONSTRING)
         
-        print("\n--- Extrator atualizado com SUCESSO absoluto! ---")
+        print("\n>>> --- db updated ---")
         sys.exit(0)
         
     except Exception as e:
-        print(f"\n[ERRO] Falha durante a execução do pipeline: {e}")
+        print(f"\n[FAIL] PIPELINE FAIL: {e}")
         try:
             registrar_metadado_banco(data_site, 'FALHOU', SCHEMA, TABELA, CONSTRING)
-            print("Status de falha registrado no banco com sucesso.")
+            print(">>> insert fail status")
         except Exception as db_e:
-            print(f"[ERRO CRÍTICO] Falha ao gravar log de erro no banco: {db_e}")
+            print(f"[FAIL] LOG INSERT FAIL: {db_e}")
             
         sys.exit(1)
 

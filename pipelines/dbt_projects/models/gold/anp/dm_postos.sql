@@ -24,7 +24,7 @@ WITH base_silver AS (
             PARTITION BY cnpj 
             ORDER BY data_coleta DESC 
         ) as rn
-    FROM {{ ref('silver_anp_precos') }}
+    FROM {{ ref('anp_combustivel') }}
     WHERE cnpj IS NOT NULL
 )
 

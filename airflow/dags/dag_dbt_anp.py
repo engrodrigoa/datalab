@@ -3,6 +3,7 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.empty import EmptyOperator
 from airflow.utils.trigger_rule import TriggerRule
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 # Importações do Astronomer Cosmos
 from cosmos import (
@@ -26,7 +27,7 @@ profile_config = ProfileConfig(
 )
 
 default_args = {
-    'owner': 'rodrigo',
+    'owner': 'datalab',
     'depends_on_past': False,
     'email_on_failure': False,
     'email_on_retry': False,
@@ -44,7 +45,7 @@ with DAG(
     2. **Bronze/Silver/Gold:** Transformações via dbt + Cosmos
     3. **Observabilidade:** Report do Elementary
     
-    **Owner:** rodrigo  
+    **Owner:** datalab  
     **Schedule:** Segundas 06:00  
     **SLA:** 2 horas
     """,
@@ -55,6 +56,16 @@ with DAG(
     catchup=False,
     tags=['anp', 'bronze', 'silver', 'gold', 'postgres', 'dbt', 'cosmos', 'elementary'],
 ) as dag:
+
+    # ==========================================
+    # 0. SETUP DE INFRAESTRUTURA (DDL)
+    # ==========================================
+    t_setup_infra = TriggerDagRunOperator(
+        task_id='trigger_setup_infra',
+        trigger_dag_id='dag_setup_infrastructure',
+        wait_for_completion=True,
+        poke_interval=10,        
+    )
 
     # ==========================================
     # 1. SCRAPING E INGESTÃO (LANDING)
@@ -136,6 +147,8 @@ with DAG(
     # ==========================================
     # DEFINIÇÃO DAS DEPENDÊNCIAS GERAIS
     # ==========================================
+    t_setup_infra >> [t_scrap_semanal, t_scrap_mensal]
+    
     t_scrap_semanal >> t_etl_semanal
     t_scrap_mensal >> t_etl_mensal
 

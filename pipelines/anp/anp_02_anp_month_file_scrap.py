@@ -38,7 +38,7 @@ DB_PORT = os.getenv("DB_PORT", "5432")
 DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
 DB_NAME = os.getenv("DB_NAME")
-TARGET = "stage.anp_pipeline_monit"
+TARGET = "ctrl.anp_metadata_mensal"
 
 CONSTRING = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 engine = create_engine(CONSTRING)
@@ -125,7 +125,6 @@ def parse_portal_items() -> pl.DataFrame:
     return pl.DataFrame(portal_items, schema=schema).unique(subset=["cat", "ref", "url_source"], keep="first")
 
 def get_monit_db_dataframe() -> pl.DataFrame:
-    """Consulta a tabela de monitoramento via Polars."""
     query = f"SELECT cat, ref FROM {TARGET};"
     try:
         return pl.read_database_uri(query=query, uri=CONSTRING)
@@ -146,6 +145,9 @@ def insert_monitoring_record(record: dict):
 # 4. EXECUÇÃO PRINCIPAL
 # ==========================================
 def run_pipeline():
+    # CHAVE DE TESTE: Mude para False para rodar em produção (todos os anos)
+    TEST_ONLY_2026 = True 
+
     print(f"--- Iniciando Scraping ANP Mensal: {datetime.now()} ---")
     
     df_portal = parse_portal_items()
@@ -158,6 +160,16 @@ def run_pipeline():
 
     # Identifica apenas os arquivos pendentes via Anti-Join
     df_pending = df_portal.join(df_db, on=["cat", "ref"], how="anti")
+    
+    # ---------------------------------------------------------
+    # APLICAÇÃO DO FILTRO DE TESTE
+    # ---------------------------------------------------------
+    if TEST_ONLY_2026:
+        import polars as pl # Garantindo a importação para o filtro
+        print("\n[MODO TESTE ATIVADO] Filtrando carga apenas para arquivos de 2026!\n")
+        df_pending = df_pending.filter(pl.col("year") == 2026)
+    # ---------------------------------------------------------
+
     pending_count = df_pending.height
 
     if pending_count == 0:

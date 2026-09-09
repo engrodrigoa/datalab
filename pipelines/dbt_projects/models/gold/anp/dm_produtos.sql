@@ -10,7 +10,7 @@ WITH base_silver AS (
         produto,
         unidade_de_medida,
         id_produto
-    FROM {{ ref('silver_anp_precos') }}
+    FROM {{ ref('anp_combustivel') }}
     WHERE produto IS NOT NULL
 )
 
