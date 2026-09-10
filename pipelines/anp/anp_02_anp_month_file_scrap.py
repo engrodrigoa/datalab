@@ -1,51 +1,37 @@
+import sys
 import os
 import re
-import sys
 import time
 import urllib.parse
 from datetime import datetime
 from warnings import filterwarnings
-
 import requests
 from bs4 import BeautifulSoup
 import polars as pl
-from sqlalchemy import create_engine
-from dotenv import load_dotenv
+from pathlib import Path
 
 filterwarnings("ignore")
-load_dotenv()
 
 # ==========================================
-# 0. TRAVA DE SEGURANÇA (FAIL-FAST)
+# COMMONS UTILS SETUP
 # ==========================================
-REQUIRED_VARS = [
-    "DB_HOST", "DB_USER", "DB_PASS", "DB_NAME"
-]
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-missing_vars = [var for var in REQUIRED_VARS if not os.getenv(var)]
-if missing_vars:
-    print(f"[ERRO FATAL] Variáveis de ambiente obrigatórias ausentes no .env: {', '.join(missing_vars)}")
-    sys.exit(1)
+# IMPORTANTE: Certifique-se de que DIR_ANP_LANDING_MONTH esteja mapeado no env_loader.py
+from pipelines.commons.env_loader import validate_env, DIR_ANP_LANDING_MONTH
+from pipelines.commons.dw_client import get_sqla_engine, test_pg_connection
+from pipelines.commons.logger import get_logger
 
-# ==========================================
-# 1. CONFIGURAÇÕES DE DIRETÓRIO E BANCO
-# ==========================================
-# Diretório raiz local mapeado no Docker
-DIR_LANDING = "/mnt/datasource/anp/arquivos_fechados"
-
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT", "5432")
-DB_USER = os.getenv("DB_USER")
-DB_PASS = os.getenv("DB_PASS")
-DB_NAME = os.getenv("DB_NAME")
-TARGET = "ctrl.anp_metadata_mensal"
-
-CONSTRING = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-engine = create_engine(CONSTRING)
+logger = get_logger("anp_02_anp_month_file_scrap")
 
 # ==========================================
-# 2. CONFIGURAÇÕES DE SCRAPING
+# TARGETS & CONFIG
 # ==========================================
+
+SCHEMA = "ctrl"
+TABELA = "anp_metadata_mensal"
+
+
 PAGE_URL = "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/serie-historica-de-precos-de-combustiveis"
 HEADERS = {
     "User-Agent": (
@@ -76,11 +62,10 @@ PRODUCT_SLUGS = {
 }
 
 # ==========================================
-# 3. FUNÇÕES DE PIPELINE
+# FUNCTIONS 
 # ==========================================
 def parse_portal_items() -> pl.DataFrame:
-    """Faz o scraping da página da ANP e retorna um DataFrame Polars com os links mapeados."""
-    response = requests.get(PAGE_URL, headers=HEADERS)
+    response = requests.get(PAGE_URL, headers=HEADERS, timeout=30)
     response.raise_for_status()
     
     soup = BeautifulSoup(response.content, "html.parser")
@@ -95,7 +80,7 @@ def parse_portal_items() -> pl.DataFrame:
                 if key in text_clean:
                     current_cat = slug_val
                     break
-
+                    
         elif element.name == "ul" and current_cat:
             for a_tag in element.find_all("a", href=True):
                 link_name = a_tag.get_text(strip=True)
@@ -125,82 +110,89 @@ def parse_portal_items() -> pl.DataFrame:
     return pl.DataFrame(portal_items, schema=schema).unique(subset=["cat", "ref", "url_source"], keep="first")
 
 def get_monit_db_dataframe() -> pl.DataFrame:
-    query = f"SELECT cat, ref FROM {TARGET};"
+    engine = get_sqla_engine()
+    query = f"SELECT cat, ref FROM {SCHEMA}.{TABELA}"
     try:
-        return pl.read_database_uri(query=query, uri=CONSTRING)
-    except Exception:
+        return pl.read_database(query=query, connection=engine)
+    except Exception as e:
+        logger.warning(f"failed to read ctrl table : {e}")
         return pl.DataFrame({"cat": [], "ref": []}, schema={"cat": pl.Utf8, "ref": pl.Utf8})
 
 def insert_monitoring_record(record: dict):
-    """Insere o registro baixado na tabela de monitoramento."""
+    engine = get_sqla_engine()
     df_record = pl.DataFrame([record])
     df_record.write_database(
-        table_name=TARGET,
+        table_name=f"{SCHEMA}.{TABELA}",
         connection=engine,
         if_table_exists="append",
         engine="sqlalchemy",
     )
 
 # ==========================================
-# 4. EXECUÇÃO PRINCIPAL
+# PIPELINE
 # ==========================================
-def run_pipeline():
-    # CHAVE DE TESTE: Mude para False para rodar em produção (todos os anos)
+def main():
+    test_pg_connection()
+    engine = get_sqla_engine()
+    dir_input = Path(DIR_ANP_LANDING_MONTH)
+
     TEST_ONLY_2026 = True 
 
-    print(f"--- Iniciando Scraping ANP Mensal: {datetime.now()} ---")
+    logger.info("=" * 60)
+    logger.info(f"web scrapping initiated on https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/serie-historica-de-precos-de-combustiveis : {datetime.now()}")
+    logger.info(f"files landing dir  {dir_input.as_posix()} : {datetime.now()}")
+    logger.info("=" * 60)
     
-    df_portal = parse_portal_items()
-    if df_portal.is_empty():
-        print("[SKIP] Estrutura inválida ou nenhum item mapeado no portal.")
-        sys.exit(99)
+    try:
+        df_portal = parse_portal_items()
+        if df_portal.is_empty():
+            logger.warning("invalid structure or no items mapped on portal. skipping")
+            sys.exit(99)
+    except Exception as e:
+        logger.error(f"SCRAPING FAILED: {e}")
+        sys.exit(1)
 
-    print(" -> Lendo tabela de monitoramento para comparação...")
+    logger.info("reading ctrl table to identify pending files")
     df_db = get_monit_db_dataframe()
-
-    # Identifica apenas os arquivos pendentes via Anti-Join
-    df_pending = df_portal.join(df_db, on=["cat", "ref"], how="anti")
     
-    # ---------------------------------------------------------
-    # APLICAÇÃO DO FILTRO DE TESTE
-    # ---------------------------------------------------------
+    df_pending = df_portal.join(df_db, on=["cat", "ref"], how="anti")
+
+    #---------teste data
     if TEST_ONLY_2026:
-        import polars as pl # Garantindo a importação para o filtro
-        print("\n[MODO TESTE ATIVADO] Filtrando carga apenas para arquivos de 2026!\n")
+        logger.info("test mode activated: filtering payload for 2026 files only")
         df_pending = df_pending.filter(pl.col("year") == 2026)
-    # ---------------------------------------------------------
+    #------------------------------------------------------
 
     pending_count = df_pending.height
 
     if pending_count == 0:
-        print("[OK] Nenhum novo arquivo encontrado. O Lakehouse já está 100% atualizado.")
+        logger.warning("lakehouse is already up to date. skipping download")
+        logger.warning('pipeline run ended with no new data to process')
         sys.exit(99)
 
-    print(f"\n[DIFERENÇA DETECTADA] Encontrado(s) {pending_count} arquivo(s) pendente(s).\n")
+    logger.info(f"difference detected. found {pending_count} pending file(s)")
     downloaded_count = 0
+    dest_root_path = Path(DIR_ANP_LANDING_MONTH)
 
     for row in df_pending.iter_rows(named=True):
         cat = row["cat"]
-        print(f"-> Processando: {cat} | {row['link_name']} (REF: {row['ref']})")
+        logger.info(f"processing: {cat} | {row['link_name']} (ref: {row['ref']})")
 
-        # Define a subpasta principal (combustivel ou glp)
         subfolder = CATEGORY_FOLDER_MAP.get(cat, "combustivel")
-        
+    
         extracted_filename = os.path.basename(urllib.parse.urlparse(row["url_source"]).path)
+
         if not extracted_filename or not extracted_filename.endswith(".csv"):
             extracted_filename = f"{cat.lower()}_{row['ref']}.csv"
-
-        # Aponta direto para a pasta fixa 'mes' exigida pela árvore de diretórios
-        destination_folder = os.path.join(DIR_LANDING, subfolder, "mes")
-        os.makedirs(destination_folder, exist_ok=True)
+        destination_folder = dest_root_path / subfolder / "mes"
+        destination_folder.mkdir(parents=True, exist_ok=True)
         
-        destination_local_path = os.path.join(destination_folder, extracted_filename)
+        destination_local_path = destination_folder / extracted_filename
 
         try:
-            res = requests.get(row["url_source"], headers=HEADERS, stream=True)
+            res = requests.get(row["url_source"], headers=HEADERS, stream=True, timeout=30)
             res.raise_for_status()
 
-            # Streaming direto para a pasta 'mes' local
             with open(destination_local_path, 'wb') as out_file:
                 for chunk in res.iter_content(chunk_size=8192):
                     out_file.write(chunk)
@@ -217,20 +209,20 @@ def run_pipeline():
             }
 
             insert_monitoring_record(monitoring_record)
-            print(f"   [SUCESSO] Salvo localmente: {destination_local_path} | Registrado no DB.")
+            logger.info(f"successfully landed at {destination_local_path.as_posix()} ")
             downloaded_count += 1
 
         except Exception as e:
-            print(f"   [ERRO] Falha no download de {row['url_source']}: {e}")
+            logger.error(f"DOWNLOAD FAILED FOR {row['url_source']}: {e}")
 
         time.sleep(2)
 
-    print("\n" + "=" * 100)
-    print(" -----> Pipeline de Ingestão executado com sucesso")
-    print(f" Total processado: {downloaded_count}/{pending_count}")
-    print(f" Destino principal: {DIR_LANDING}")
-    print("=" * 100 + "\n")
+    logger.info("=" * 60)
+    logger.info("pipeline run complete")
+    logger.info(f"total processed: {downloaded_count}/{pending_count}")
+    logger.info(f"main destination: {dest_root_path.as_posix()}")
+    logger.info("=" * 60)
     sys.exit(0)
 
 if __name__ == "__main__":
-    run_pipeline()
+    main()

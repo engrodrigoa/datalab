@@ -2,46 +2,38 @@ import os
 import sys
 import gc
 import io
-import traceback
 import glob
 from datetime import datetime
-
-import polars as pl
-from sqlalchemy import create_engine, text
-from dotenv import load_dotenv
 from warnings import filterwarnings
+import polars as pl
+from sqlalchemy import text
+from pathlib import Path
 
 filterwarnings("ignore")
-load_dotenv()
 
 # ==========================================
-# 1. TRAVA DE SEGURANÇA E CONFIGURAÇÕES POSTGRESQL
+# COMMONS UTILS SETUP
 # ==========================================
-REQUIRED_PG_VARS = ["DB_HOST", "DB_PORT", "DB_USER", "DB_PASS", "DB_NAME"]
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-missing_vars = [var for var in REQUIRED_PG_VARS if not os.getenv(var)]
-if missing_vars:
-    print(f"[ERRO FATAL] Variáveis de banco ausentes no .env: {', '.join(missing_vars)}")
-    sys.exit(1)
+from pipelines.commons.env_loader import validate_env, DIR_ANP_LANDING_WEEK
+from pipelines.commons.dw_client import get_sqla_engine, test_pg_connection
+from pipelines.commons.logger import get_logger
+from pipelines.commons.anp_metrics import log_batch_metrics
 
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT")
-DB_USER = os.getenv("DB_USER")
-DB_PASS = os.getenv("DB_PASS")
-DB_NAME = os.getenv("DB_NAME")
+logger = get_logger("anp_03_anp_landing_semanal")
 
-DB_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-engine = create_engine(DB_URL)
-
+# ==========================================
+# TARGETS & CONFIG
+# ==========================================
 SCHEMA = "bronze"
 TABELA = "anp_landing_semanal"
-DIR_INPUT = "/mnt/datasource/anp/ult4"
+#DIR_INPUT = "/mnt/datasource/anp/ult4"
 
 # ==========================================
-# 2. FUNÇÃO DE INGESTÃO MASSIVA (COPY)
+# FUNCTIONS
 # ==========================================
 def copy_to_postgres(df: pl.DataFrame, engine_db, schema: str, tabela: str):
-    """Realiza o bulk insert utilizando o comando COPY do PostgreSQL."""
     buffer = io.StringIO()
     df.write_csv(buffer)
     buffer.seek(0)
@@ -69,77 +61,106 @@ def copy_to_postgres(df: pl.DataFrame, engine_db, schema: str, tabela: str):
         conn.close()
 
 # ==========================================
-# 3. EXECUÇÃO DO PIPELINE
+# PIPELINE
 # ==========================================
-def run_pipeline():
-    print(f"=== Iniciando Ingestão Landing (Raw): {datetime.now()} ===")
-    
-    # 3.1 Busca arquivos pendentes (ignorando os que começam com OK_)
-    padrao_busca = os.path.join(DIR_INPUT, "*.csv")
-    todos_arquivos = glob.glob(padrao_busca)
-    
+def main():
+    validate_env({"DIR_ANP_LANDING_WEEK": DIR_ANP_LANDING_WEEK})
+    test_pg_connection()
+
+    engine = get_sqla_engine()
+    dir_input = Path(DIR_ANP_LANDING_WEEK)
+
+    logger.info("=" * 60)
+    logger.info(f"starting ingestion. loading weekly files from {dir_input.as_posix()} : {datetime.now()}")
+    logger.info("=" * 60)
+
+    padrao_busca = dir_input / "*.csv"
+    todos_arquivos = glob.glob(str(padrao_busca))
+
     arquivos_pendentes = sorted([
         f for f in todos_arquivos 
         if not os.path.basename(f).startswith("OK_")
     ])
 
     if not arquivos_pendentes:
-        print("[OK] Nenhum arquivo pendente para processar.")
+        logger.warning("no pending files found to process")
         sys.exit(0)
 
-    print(f" -> {len(arquivos_pendentes)} arquivo(s) encontrado(s).")
-    timestamp_ingestao = datetime.now()
+    pending_count = len(arquivos_pendentes)
+    logger.info(f"difference detected. found {pending_count} pending file(s)")
 
-    # 3.2 Loop de processamento
+    timestamp_ingestao = datetime.now()
+    processed_count = 0
+
+    
+    dfs_lote = []
     for caminho_completo in arquivos_pendentes:
         nome_base = os.path.basename(caminho_completo)
-        print(f"\n- Lendo: {nome_base}")
+        logger.info(f"reading: {nome_base}")
 
         try:
-            # Leitura Raw: infer_schema_length=0 força tudo como string
             df_bruto = pl.read_csv(
                 caminho_completo,
                 separator=";",
                 encoding="utf8",
-                infer_schema_length=0
+                infer_schema_length=0,
+                ignore_errors=True
             )
-            
-            # Padronização apenas dos nomes das colunas (snake_case)
+
             novas_colunas = [c.lower().replace(" - ", "_").replace(" ", "_") for c in df_bruto.columns]
             df_padronizado = df_bruto.rename(dict(zip(df_bruto.columns, novas_colunas)))
-            
-            # Adição de Metadados de Linhagem
+
             df_padronizado = df_padronizado.with_columns(
                 pl.lit(nome_base).alias("arquivo"),
                 pl.lit(timestamp_ingestao).alias("ingestion_timestamp")
             )
 
-            # Idempotência: Remove dados anteriores do mesmo arquivo, se houver
+            dfs_lote.append((caminho_completo, nome_base, df_padronizado))
+        except Exception as e:
+            logger.error(f"FAILED TO READ {nome_base}: {e}")
+
+    if not dfs_lote:
+        logger.error("no valid dataframes loaded into memory")
+        sys.exit(1)
+
+    # loop through each dataframe in memory and process it 
+    for caminho_completo, nome_base, df_padronizado in dfs_lote:
+        logger.info(f"processing load for: {nome_base}")
+
+        try:
             with engine.begin() as conn:
                 registros_deletados = conn.execute(
                     text(f"DELETE FROM {SCHEMA}.{TABELA} WHERE arquivo = :arquivo"),
                     {"arquivo": nome_base}
                 ).rowcount
                 if registros_deletados > 0:
-                    print(f"  -> {registros_deletados} registros antigos removidos por idempotência.")
+                    logger.info(f"removed {registros_deletados} old record(s)")
 
-            # Carga via COPY
             copy_to_postgres(df_padronizado, engine, SCHEMA, TABELA)
-            print("  -> Dados gravados no PostgreSQL com sucesso.")
+            logger.info(f">>> successfully loaded into {SCHEMA}.{TABELA}")
 
-            # Renomeia o arquivo para marcar como processado
-            novo_nome = os.path.join(os.path.dirname(caminho_completo), f"OK_{nome_base}")
-            os.rename(caminho_completo, novo_nome)
-            print(f"  -> Arquivo renomeado para OK_{nome_base}")
+            novo_caminho = os.path.join(os.path.dirname(caminho_completo), f"OK_{nome_base}")
+            os.rename(caminho_completo, novo_caminho)
+            logger.info(f"renamed file to OK_{nome_base}")
+
+            processed_count += 1
 
         except Exception as e:
-            print(f"  [ERRO] Falha ao processar {nome_base}: {e}")
-            traceback.print_exc()
+            logger.error(f"FAILED TO PROCESS LOAD FOR {nome_base}: {e}")
+
         finally:
             gc.collect()
 
-    print("\n============================================================")
-    print("Pipeline da Camada Landing executado com sucesso.")
+    # batch metrics logging
+    df_lote_completo = pl.concat([item[2] for item in dfs_lote])
+    log_batch_metrics(df_lote_completo, total_files=processed_count)
+
+    logger.info("=" * 60)
+    logger.info("pipeline run complete")
+    logger.info(f"total processed: {processed_count}/{pending_count}")
+    logger.info("=" * 60)
+    sys.exit(0)
+
 
 if __name__ == "__main__":
-    run_pipeline()
+    main()

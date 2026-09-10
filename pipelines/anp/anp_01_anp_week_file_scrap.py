@@ -3,20 +3,20 @@ import os
 import re
 from datetime import datetime
 from warnings import filterwarnings
-
 import requests
 from bs4 import BeautifulSoup
 import polars as pl
-from sqlalchemy import create_engine
-from dotenv import load_dotenv
+from pathlib import Path
 
 
-load_dotenv()
 filterwarnings("ignore")
 
-#####################################
-# SETUP INIT
-#####################################
+# ==========================================
+# TARGETS & CONFIGS
+# ==========================================
+SCHEMA = "ctrl"
+TABELA = "anp_metadata_semanal"
+
 URL_ANP = "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/serie-historica-de-precos-de-combustiveis"
 HEADERS_WEB = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -28,37 +28,33 @@ LINKS_DOWNLOAD = {
     "ultimas-4-semanas-glp.csv": "https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/arquivos/shpc/qus/ultimas-4-semanas-glp.csv"
 }
 
-# FILES LANDING
-DIR_LANDING = "/mnt/datasource/anp/ult4"
+# ==========================================
+# COMMONS UTILS SETUP
+# ==========================================
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-# FAIL FAST CREDENCIALS
-REQUIRED_PG_VARS = ["DB_HOST", "DB_PORT", "DB_USER", "DB_PASS", "DB_NAME"]
-missing_vars = [var for var in REQUIRED_PG_VARS if not os.getenv(var)]
-if missing_vars:
-    print(f"[FAIL] no credencials vars on .env {', '.join(missing_vars)}")
-    sys.exit(1)
+from pipelines.commons.env_loader import  DIR_ANP_LANDING_WEEK
+from pipelines.commons.dw_client import get_sqla_engine, test_pg_connection
+from pipelines.commons.logger import get_logger
 
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT", "5432")
-DB_USER = os.getenv("DB_USER")
-DB_PASS = os.getenv("DB_PASS")
-DB_NAME = os.getenv("DB_NAME")
-SCHEMA = "ctrl"
-TABELA = "anp_metadata_semanal"
+# instaciar logger para o pipeline corrente
+logger = get_logger("anp_01_anp_week_file_scrap")
 
-CONSTRING = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-#####################################
-# PROCESSING FUNCTIONS
-#####################################
-def ler_ultima_data_banco(string_conexao, schema, tabela):
+# ==========================================
+# FUNCTIONS
+# ==========================================
+def ler_ultima_data_banco(schema: str, tabela: str):
+    engine = get_sqla_engine()
+    query = f"SELECT MAX(data_ref) AS max_data_ref FROM {schema}.{tabela}"
     try:
-        df_metadata = pl.read_database_uri(f"SELECT * FROM {schema}.{tabela}", uri=string_conexao)
-        if not df_metadata.is_empty() and "data_ref" in df_metadata.columns:
-            return df_metadata.select(pl.col('data_ref').max()).item()
+        df = pl.read_database(query=query, connection=engine)
+        if not df.is_empty() and df["max_data_ref"][0] is not None:
+            return df["max_data_ref"][0]
         return None
-    except Exception:
-        return None
+    except Exception as e:
+        logger.error(f'lasdate db read failed {e}')
+        raise e
 
 def obter_data_atualizacao_site(url, headers):
     response = requests.get(url, headers=headers, timeout=15)
@@ -72,75 +68,88 @@ def obter_data_atualizacao_site(url, headers):
     )
     if padrao:
         return datetime.strptime(padrao.group(1), "%d/%m/%Y").date()
-    raise ValueError("data não encontrada.")
+    raise ValueError("no date param found on site. scraping failed")
 
-def download_csv_local(links, diretorio_destino):
-    os.makedirs(diretorio_destino, exist_ok=True)
+def download_csv_local(links: dict, diretorio_destino: str):
+    dest_path = Path(diretorio_destino)
+    dest_path.mkdir(parents=True, exist_ok=True)
     
     for nome_arquivo, link_url in links.items():
-        caminho_local = os.path.join(diretorio_destino, nome_arquivo)
-        print(f" -> Baixando {nome_arquivo} para {caminho_local}...")
+        caminho_arquivo = dest_path / nome_arquivo
+        caminho_log = caminho_arquivo.as_posix()
+        
+        logger.info(f"downloading file {nome_arquivo} to {caminho_log}")
         
         res_file = requests.get(link_url, headers=HEADERS_WEB, stream=True, timeout=30)
         res_file.raise_for_status()
         
-        with open(caminho_local, 'wb') as out_file:
+        with open(caminho_arquivo, 'wb') as out_file:
             for chunk in res_file.iter_content(chunk_size=8192):
                 out_file.write(chunk)
 
-def registrar_metadado_banco(data_site, status, schema, tabela, string_conexao):
-    engine = create_engine(string_conexao)
+def registrar_metadado_banco(data_site, status, schema, tabela): #, string_conexao):
+    engine = get_sqla_engine()
     df_resultado = pl.DataFrame([{
         'data_ref': data_site,
         'data_dag_run': datetime.now(),
         'status': status
     }])
+
     df_resultado.write_database(
         table_name=f"{schema}.{tabela}",
-        connection=string_conexao,
+        connection=engine,
         if_table_exists="append",
         engine="sqlalchemy"
     )
-    engine.dispose()
+   
 
-#####################################
-# DATA FLOW
-#####################################
+# ==========================================
+# PIPELINE
+# ==========================================
 def main():
-    print(f">>> --- Iniciando Extrator ANP (Web -> Local): {datetime.now()} ---")
+    test_pg_connection()
+    engine = get_sqla_engine()
+    dir_input = Path(DIR_ANP_LANDING_WEEK)
+
+    logger.info("=" * 60)
+    logger.info(f"web scrapping initiated on https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/serie-historica-de-precos-de-combustiveis : {datetime.now()}")
+    logger.info(f"files landing dir  {dir_input.as_posix()} : {datetime.now()}")
+    logger.info("=" * 60)
     
     try:
         data_site = obter_data_atualizacao_site(URL_ANP, HEADERS_WEB)
-        print(f" >>>[GET] date recovered from anp {data_site}")
+       
+        logger.info(f"recovered date param from scrapping >> {data_site}")
     except Exception as e:
-        print(f">>>[FAIL] scrapping fail: {e}")
+        logger.error(f"scrapping fail: {e}")
         sys.exit(1)
         
-    ultima_data_banco = ler_ultima_data_banco(CONSTRING, SCHEMA, TABELA)
-    print(f" >>> lasdate run {ultima_data_banco}")
+    ultima_data_banco = ler_ultima_data_banco(SCHEMA, TABELA)
+    logger.info(f"last date on ctrl database >> {ultima_data_banco}")
 
     # Condição de idempotência
     if ultima_data_banco is not None and data_site <= ultima_data_banco:
-        print(">>> [SKIP] already up-to-date.")
+        logger.warning("lakehouse is already up to date. skipping download")
+        logger.warning('pipeline run ended with no new data to process')
         sys.exit(99) 
         
     try:
-        print(f"\n>>> [STEP 1/2] downloading files on {DIR_LANDING}...")
-        download_csv_local(LINKS_DOWNLOAD, DIR_LANDING)
+        logger.info(f"[STEP 1/2] downloading files on {DIR_ANP_LANDING_WEEK}")
+        download_csv_local(LINKS_DOWNLOAD, DIR_ANP_LANDING_WEEK)
         
-        print("\n>>>[STEP 2/2] writing successs")
-        registrar_metadado_banco(data_site, 'SUCESSO', SCHEMA, TABELA, CONSTRING)
+        logger.info("[STEP 2/2] writing successs in ctrl table")
+        registrar_metadado_banco(data_site, 'SUCESSO', SCHEMA, TABELA)
         
-        print("\n>>> --- db updated ---")
+        logger.info(" --- db updated ---")
         sys.exit(0)
         
     except Exception as e:
-        print(f"\n[FAIL] PIPELINE FAIL: {e}")
+        logger.error(f"PIPELINE RUN FAIL: {e}")
         try:
-            registrar_metadado_banco(data_site, 'FALHOU', SCHEMA, TABELA, CONSTRING)
-            print(">>> insert fail status")
+            registrar_metadado_banco(data_site, 'FALHOU', SCHEMA, TABELA)
+            logger.info("logging fail status")
         except Exception as db_e:
-            print(f"[FAIL] LOG INSERT FAIL: {db_e}")
+            logger.error(f"log insert fail {db_e}")
             
         sys.exit(1)
 

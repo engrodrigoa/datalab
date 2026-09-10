@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.bash import BashOperator
-from airflow.operators.empty import EmptyOperator
-from airflow.utils.trigger_rule import TriggerRule
-from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+from airflow.operators.bash import BashOperator # type: ignore
+from airflow.operators.empty import EmptyOperator # type: ignore
+from airflow.utils.trigger_rule import TriggerRule # type: ignore
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator # type: ignore
 
 # Importações do Astronomer Cosmos
-from cosmos import (
+from cosmos import ( # type: ignore
     DbtTaskGroup,
     ProjectConfig,
     ProfileConfig,

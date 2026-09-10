@@ -58,7 +58,20 @@ MANIFEST_PATH = os.path.join(TARGET_DIR, "manifest.json")
 ##################################
 ### TARGET PATH
 ##################################
+default_landing_week = (
+    "/mnt/datasource/anp/ult4" 
+    if is_docker 
+    else os.path.join(ROOT_DIR, "datasource", "anp", "ult4")
+)
 
+default_landing_month = (
+    "/mnt/datasource/anp/arquivos_fechados" 
+    if is_docker 
+    else os.path.join(ROOT_DIR, "datasource", "anp", "arquivos_fechados")
+)
+
+DIR_ANP_LANDING_WEEK = os.getenv("DIR_ANP_LANDING_WEEK", default_landing_week)
+DIR_ANP_LANDING_MONTH = os.getenv("DIR_ANP_LANDING_MONTH", default_landing_month)
 
 
 
