@@ -56,7 +56,8 @@ services:
       - ./airflow/plugins:/opt/airflow/plugins
       - ./datasource:/mnt/datasource
       - ./pipelines:/opt/airflow/pipelines
-      - ./.env:/opt/airflow/.env:ro 
+      - ./.env:/opt/airflow/.env:ro
+      - ./audit_logs:/opt/airflow/audit_logs 
       
     env_file:
       - .env
@@ -85,7 +86,8 @@ services:
       - ./airflow/plugins:/opt/airflow/plugins
       - ./datasource:/mnt/datasource
       - ./pipelines:/opt/airflow/pipelines
-      - ./.env:/opt/airflow/.env:ro 
+      - ./.env:/opt/airflow/.env:ro
+      - ./audit_logs:/opt/airflow/audit_logs 
     env_file:
       - .env
     command: scheduler

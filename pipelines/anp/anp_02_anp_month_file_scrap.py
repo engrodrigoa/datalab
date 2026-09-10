@@ -112,11 +112,20 @@ def parse_portal_items() -> pl.DataFrame:
 def get_monit_db_dataframe() -> pl.DataFrame:
     engine = get_sqla_engine()
     query = f"SELECT cat, ref FROM {SCHEMA}.{TABELA}"
+    schema = {"cat": pl.Utf8, "ref": pl.Utf8}
     try:
-        return pl.read_database(query=query, connection=engine)
+        df = pl.read_database(query=query, connection=engine)
+        if df.is_empty():
+            return pl.DataFrame(schema=schema)
+        
+        # Garante a tipagem String/Utf8 mesmo se vier como objeto/null do SQL
+        return df.with_columns([
+            pl.col("cat").cast(pl.Utf8),
+            pl.col("ref").cast(pl.Utf8)
+        ])
     except Exception as e:
         logger.warning(f"failed to read ctrl table : {e}")
-        return pl.DataFrame({"cat": [], "ref": []}, schema={"cat": pl.Utf8, "ref": pl.Utf8})
+        return pl.DataFrame(schema=schema)
 
 def insert_monitoring_record(record: dict):
     engine = get_sqla_engine()
@@ -155,6 +164,12 @@ def main():
     logger.info("reading ctrl table to identify pending files")
     df_db = get_monit_db_dataframe()
     
+    # Garantia extra de tipagem para evitar SchemaError no join
+    df_db = df_db.with_columns([
+        pl.col("cat").cast(pl.Utf8),
+        pl.col("ref").cast(pl.Utf8)
+    ])
+
     df_pending = df_portal.join(df_db, on=["cat", "ref"], how="anti")
 
     #---------teste data
