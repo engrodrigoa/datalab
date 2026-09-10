@@ -27,6 +27,7 @@ with DAG(
         postgres_conn_id='postgres_default', 
         sql="""
             CREATE SCHEMA IF NOT EXISTS ctrl;
+            CREATE SCHEMA IF NOT EXISTS audit;
             CREATE SCHEMA IF NOT EXISTS bronze;
             CREATE SCHEMA IF NOT EXISTS silver;
             CREATE SCHEMA IF NOT EXISTS gold;
@@ -56,6 +57,23 @@ with DAG(
                 data_ref date NULL,
                 data_dag_run timestamp NULL,
                 status varchar NULL
+            );
+
+            CREATE TABLE audit.dbt_runs (
+                run_timestamp timestamp NULL,
+                invocation_id text NOT NULL,
+                node_id text NOT NULL,
+                status text NULL,
+                execution_time_sec float8 NULL,
+                failures int4 NULL,
+                message text NULL,
+                resource_type text NULL,
+                "database" text NULL,
+                schema_layer text NULL,
+                "materialized" text NULL,
+                tags text NULL,
+                data_carga timestamp NULL,
+                CONSTRAINT dbt_runs_pkey PRIMARY KEY (invocation_id, node_id)
             );
         """,
     )

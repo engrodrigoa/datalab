@@ -1,76 +1,48 @@
 import polars as pl
 import json
-import boto3
 from datetime import datetime
-from dotenv import load_dotenv
 from warnings import filterwarnings
 import os
 import sys
-import psycopg2
 
 filterwarnings("ignore")
-load_dotenv()
+
 
 # ==========================================
-# 1. VALIDAÇÃO DE CREDENCIAIS (Trava de Segurança)
+# commons utils: env_loader
 # ==========================================
-REQUIRED_VARS = ["MINIO_ENDPOINT", "MINIO_ACCESS_KEY", "MINIO_SECRET_KEY"]
-missing_vars = [var for var in REQUIRED_VARS if not os.getenv(var)]
-if missing_vars:
-    print(f"[ERRO FATAL] Variáveis S3 ausentes no .env: {', '.join(missing_vars)}")
-    sys.exit(1)
+filterwarnings("ignore")
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
-MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
-endpoint_limpo = MINIO_ENDPOINT.replace("http://", "").replace("https://", "")
-BUCKET_DATASOURCE = "audit"
+from pipelines.commons.env_loader import (
+    RUN_RESULTS_PATH, MANIFEST_PATH, CONSTRING,
+    MINIO_ACCESS_KEY, MINIO_SECRET_KEY, BUCKET_DATASOURCE, validate_env,
+)
+from pipelines.commons.s3_client import get_s3_client
+from pipelines.commons.dw_client import get_pg_connection
 
-REQUIRED_PG_VARS = ["DB_HOST", "DB_PORT", "DB_USER", "DB_PASS", "DB_NAME"]
-missing_vars = [var for var in REQUIRED_PG_VARS if not os.getenv(var)]
-if missing_vars:
-    print(f"[ERRO FATAL] Variáveis PG ausentes no .env: {', '.join(missing_vars)}")
-    sys.exit(1)
+validate_env({
+    "MINIO_ACCESS_KEY": MINIO_ACCESS_KEY,
+    "MINIO_SECRET_KEY": MINIO_SECRET_KEY,
+    "CONSTRING": CONSTRING,
+})
 
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT", "5432")
-DB_USER = os.getenv("DB_USER")
-DB_PASS = os.getenv("DB_PASS")
-DB_NAME = os.getenv("DB_NAME")
-CONSTRING = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-
-# Configurações de Paths
-TARGET_DIR = "/opt/airflow/dags/pipelines/dbt_projects/target" #"/home/lambda2/lambda2/airflow/dags/pipelines/dbt_projects/target"  #
-RUN_RESULTS_PATH = f"{TARGET_DIR}/run_results.json"
-MANIFEST_PATH = f"{TARGET_DIR}/manifest.json"
-
-# ==========================================
-# 2. DEFINIÇÃO DAS FUNÇÕES MODULARES
-# ==========================================
 def backup_logs_to_s3(timestamp_str):
-    """Copia os artefatos brutos para o MinIO (Camada Bronze)."""
-    s3_client = boto3.client(
-        's3',
-        endpoint_url=f"http://{endpoint_limpo}",
-        aws_access_key_id=MINIO_ACCESS_KEY,
-        aws_secret_access_key=MINIO_SECRET_KEY
-    )
-    
-    s3_client.upload_file(
-        Filename=RUN_RESULTS_PATH, 
-        Bucket=BUCKET_DATASOURCE, 
-        Key=f"dbt/run_results/run_results_{timestamp_str}.json"
-    )
-    s3_client.upload_file(
-        Filename=MANIFEST_PATH, 
-        Bucket=BUCKET_DATASOURCE, 
-        Key=f"dbt/manifests/manifest_{timestamp_str}.json"
-    )
-    print(f"-> Backup S3 concluído (Sufixo: {timestamp_str})")
+    s3 = get_s3_client()
+    s3.upload_file(RUN_RESULTS_PATH, BUCKET_DATASOURCE, f"dbt/run_results/run_results_{timestamp_str}.json")
+    s3.upload_file(MANIFEST_PATH, BUCKET_DATASOURCE, f"dbt/manifests/manifest_{timestamp_str}.json")
+    print(f">>>>> [SUCCESS] s3 backup done (file sufix: {timestamp_str})")
 
-
+# ==========================================
 def process_dbt_artifacts(now):
     """Lê os JSONs usando Polars e retorna um DataFrame desnormalizado enriquecido."""
+    with open(RUN_RESULTS_PATH, 'r') as f:
+        run_data = json.load(f)
+
+    if not run_data.get('results'):
+        print(">>>>> [WARNING] empty .json. no node executed in this run. skipping processing.")
+        return pl.DataFrame()
+
     # Parsing da Tabela Fato
     df_runs = (
         pl.read_json(RUN_RESULTS_PATH)
@@ -110,22 +82,27 @@ def process_dbt_artifacts(now):
         .join(df_manifest, on='node_id', how='left')
         .with_columns(
             pl.lit(now).cast(pl.Datetime('us')).alias('data_carga'),
-            pl.col('tags').list.join(',').alias('tags') # Evita erro do psycopg2
+            pl.col('tags').list.join(',').alias('tags')
         )
     )
-    print("-> Processamento Polars concluído.")
+    print(">>> [END] processing done")
     return df_final_log
 
 
 def load_logs_to_postgres(df_final_log):
     """Grava na Staging temporária e faz o Upsert (Merge) para a tabela oficial."""
+    if df_final_log.is_empty():
+        print(">>> [END] nothing to load to db. no error exit")
+        return
+
     # 1. Grava na Staging
     df_final_log.write_database(
-        table_name="audit.dbt_runs_stg", 
-        connection=CONSTRING, 
+        table_name="audit.dbt_runs_stg",
+        connection=CONSTRING,
         if_table_exists="replace",
         engine="sqlalchemy"
     )
+    
 
     # 2. Cláusula de Merge Idempotente
     merge_query = """
@@ -145,19 +122,19 @@ def load_logs_to_postgres(df_final_log):
     """
 
     # 3. Execução nativa no banco
-    conn = psycopg2.connect(CONSTRING)
+    conn = get_pg_connection()
     cur = conn.cursor()
     cur.execute(merge_query)
     conn.commit()
     cur.close()
     conn.close()
-    print("-> Upsert no PostgreSQL concluído com Idempotência.")
+    print(">>> [END] audit table updated")
 
 # ==========================================
 # 3. ORQUESTRAÇÃO PRINCIPAL (Ponto de Entrada)
 # ==========================================
 def main():
-    print("Iniciando rotina de Observabilidade do dbt...")
+    print(">>> [START] observability ")
     
     # Congela o tempo global da execução
     now = datetime.now()
@@ -172,7 +149,7 @@ def main():
     # 3. Carga no Banco (Data Warehouse)
     load_logs_to_postgres(df_final_log)
     
-    print("Rotina finalizada com sucesso.")
+    print(">>> [END] observability ")
 
 if __name__ == "__main__":
     main()

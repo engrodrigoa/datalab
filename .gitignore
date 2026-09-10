@@ -6,7 +6,9 @@ __pycache__/
 .env
 
 # dbt artifacts and configs
+pipelines/dbt_projects/dbt_packages/
+pipelines/dbt_projects/logs/
 pipelines/dbt_projects/target/
-pipelines/dbt_projects/dlogs/
+
 pipelines/dbt_projects/profiles.yml
 pipelines/dbt_projects/.user.yml
