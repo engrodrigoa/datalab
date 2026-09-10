@@ -4,6 +4,9 @@ datasource/
 __pycache__/
 *.pyc
 .env
+.venv/
+.vscode
+logs/
 
 # dbt artifacts and configs
 pipelines/dbt_projects/dbt_packages/

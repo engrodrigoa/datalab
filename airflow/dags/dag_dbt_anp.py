@@ -122,8 +122,21 @@ with DAG(
     )
 
     # ==========================================
-    # 4. ELEMENTARY: GERAÇÃO DE RELATÓRIO
+    # 4. ELEMENTARY: SETUP + GERAÇÃO DE RELATÓRIO
     # ==========================================
+    # Materializa as tabelas internas do Elementary (elementary_test_results, etc.)
+    # ANTES do report, já que o Cosmos exclui esse pacote do grafo principal.
+    run_elementary_models = BashOperator(
+        task_id='run_elementary_models',
+        bash_command=(
+            f'{DBT_EXECUTABLE_PATH} run --select elementary '
+            f'--project-dir {DBT_PROJECT_DIR} --profiles-dir {DBT_PROJECT_DIR} '
+            f'--profile datalab --target dev'
+        ),
+        execution_timeout=timedelta(minutes=10),
+        trigger_rule=TriggerRule.ALL_DONE,  # roda mesmo se algum model do dbt_transformations falhar
+    )
+
     # Gera o dashboard HTML do Elementary para visualização do workflow e testes do dbt
     generate_elementary_report = BashOperator(
         task_id='generate_elementary_report',
@@ -157,4 +170,4 @@ with DAG(
     
     # O dbt roda em seguida, depois o Elementary gera o report, 
     # e por último, o log de execução é salvo.
-    join_landing >> dbt_transformations >> generate_elementary_report >> export_dbt_logs
+    join_landing >> dbt_transformations >> run_elementary_models >> generate_elementary_report >> export_dbt_logs

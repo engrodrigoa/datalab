@@ -47,6 +47,7 @@ services:
       AIRFLOW_CONN_POSTGRES_DEFAULT: postgresql://datalab:datalab@postgres:5432/datalab
       AIRFLOW__COSMOS__USE_DATASET_AIRFLOW3_URI_STANDARD: '1'
       OPENLINEAGE_DISABLED: 'true'
+      DBT_PG_HOST: postgres
     ports:
       - "8080:8080"
     volumes:
@@ -56,6 +57,7 @@ services:
       - ./datasource:/mnt/datasource
       - ./pipelines:/opt/airflow/pipelines
       - ./.env:/opt/airflow/.env:ro 
+      
     env_file:
       - .env
     command: webserver
@@ -76,6 +78,7 @@ services:
       AIRFLOW_CONN_POSTGRES_DEFAULT: postgresql://datalab:datalab@postgres:5432/datalab
       AIRFLOW__COSMOS__USE_DATASET_AIRFLOW3_URI_STANDARD: '1'
       OPENLINEAGE_DISABLED: 'true'
+      DBT_PG_HOST: postgres
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs

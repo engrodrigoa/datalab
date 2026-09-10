@@ -1,9 +1,9 @@
 # dbt_project.yml
-name: 'dbt_projects'
-version: '1.0.0'
+name: "dbt_project"
+version: "1.0.0"
 config-version: 2
 
-profile: 'datalab' 
+profile: "datalab"
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]
@@ -19,12 +19,12 @@ clean-targets:
 
 # Configuração de Materialização e Schemas por Pasta
 models:
-  dbt_projects:
+  dbt_project:
     bronze:
       +materialized: view
       +schema: bronze
     silver:
-      +materialized: table 
+      +materialized: table
       +schema: silver
     gold:
       +materialized: table

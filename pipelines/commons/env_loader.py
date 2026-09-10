@@ -28,12 +28,20 @@ MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
 BUCKET_DATASOURCE = os.getenv("MINIO_BUCKET_AUDIT", "audit")
 
+REQUIRED_BUCKETS = [
+    os.getenv("MINIO_BUCKET_LANDING", "landing"),
+    os.getenv("MINIO_BUCKET_BRONZE", "bronze"),
+    os.getenv("MINIO_BUCKET_SILVER", "silver"),
+    os.getenv("MINIO_BUCKET_GOLD", "gold"),
+    os.getenv("MINIO_BUCKET_AUDIT", "audit"),
+]
+
 ##################################
 ### POSTGRES SETUP
 ### DB DATALAB
 ##################################
 DB_HOST = os.getenv("DB_HOST_INTERNAL") if is_docker else os.getenv("DB_HOST_EXTERNAL")
-DB_PORT = os.getenv("DB_PORT", "5432")
+DB_PORT = os.getenv("DB_PORT", 5432)
 DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
 DB_NAME = os.getenv("DB_NAME")

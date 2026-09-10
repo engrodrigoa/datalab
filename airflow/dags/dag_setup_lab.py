@@ -1,6 +1,12 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.operators.python import PythonOperator
+import sys, os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from pipelines.commons.s3_client import ensure_buckets_exist
+from pipelines.commons.env_loader import REQUIRED_BUCKETS
 
 default_args = {
     'owner': 'datalab',
@@ -8,6 +14,9 @@ default_args = {
     'retries': 1,
     'retry_delay': timedelta(minutes=2),
 }
+
+def _create_buckets():
+        ensure_buckets_exist(REQUIRED_BUCKETS)
 
 with DAG(
     dag_id='dag_setup_infrastructure',
@@ -35,6 +44,14 @@ with DAG(
     )
 
     # ==========================================
+    # object storage (MinIO / S3)
+    # ==========================================
+    create_buckets = PythonOperator(
+        task_id='create_buckets',
+        python_callable=_create_buckets,
+    )
+
+    # ==========================================
     # control tables
     # ==========================================
     create_ctrl_tables = PostgresOperator(
@@ -59,7 +76,7 @@ with DAG(
                 status varchar NULL
             );
 
-            CREATE TABLE audit.dbt_runs (
+            CREATE TABLE IF NOT EXISTS audit.dbt_runs (
                 run_timestamp timestamp NULL,
                 invocation_id text NOT NULL,
                 node_id text NOT NULL,
@@ -132,4 +149,4 @@ with DAG(
     # ==========================================
     # flow
     # ==========================================
-    create_schemas >> create_ctrl_tables >> create_bronze_tables
+    create_buckets >> create_schemas >> create_ctrl_tables >> create_bronze_tables
