@@ -2,6 +2,7 @@ import sys, os
 import boto3
 from botocore.exceptions import ClientError, EndpointConnectionError
 
+
 from pipelines.commons.env_loader import (
     validate_env, MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, REQUIRED_BUCKETS
 )
@@ -9,7 +10,9 @@ from pipelines.commons.logger import get_logger
 
 logger = get_logger("S3_CLIENT")
 
-MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "http://minio:9000") 
+is_docker = os.environ.get("AIRFLOW_UID") is not None or os.path.exists("/.dockerenv")
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT_INTERNAL") if is_docker else os.getenv("MINIO_ENDPOINT_EXTERNAL")
+BUCKET_AUDIT = os.getenv("MINIO_BUCKET_AUDIT", "audit")
 
 
 

@@ -1,0 +1,309 @@
+================================================================================
+ AUDIT TRAIL LOG - DAG: dag_dbt_anp
+ EXECUTION RUN ID: manual__2026-09-11T10:26:12.653584+00:00
+ GENERATED AT: 2026-09-11 10:28:01
+================================================================================
+
+
+################################################################################
+--- TASK EXECUTION: export_dbt_logs ---
+################################################################################
+
+[2026-09-11T10:27:53.710+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-09-11T10:27:53.808+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: dag_dbt_anp.export_dbt_logs manual__2026-09-11T10:26:12.653584+00:00 [queued]>
+[2026-09-11T10:27:53.823+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: dag_dbt_anp.export_dbt_logs manual__2026-09-11T10:26:12.653584+00:00 [queued]>
+[2026-09-11T10:27:53.826+0000] {taskinstance.py:2303} INFO - Starting attempt 1 of 2
+[2026-09-11T10:27:53.844+0000] {taskinstance.py:2327} INFO - Executing <Task(BashOperator): export_dbt_logs> on 2026-09-11 10:26:12.653584+00:00
+[2026-09-11T10:27:53.856+0000] {standard_task_runner.py:90} INFO - Running: ['airflow', 'tasks', 'run', 'dag_dbt_anp', 'export_dbt_logs', 'manual__2026-09-11T10:26:12.653584+00:00', '--job-id', '526', '--raw', '--subdir', 'DAGS_FOLDER/dag_dbt_anp.py', '--cfg-path', '/tmp/tmph2tsoqej']
+[2026-09-11T10:27:53.861+0000] {standard_task_runner.py:91} INFO - Job 526: Subtask export_dbt_logs
+[2026-09-11T10:27:53.862+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/task/task_runner/standard_task_runner.py:61 DeprecationWarning: This process (pid=623) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2026-09-11T10:27:53.863+0000] {standard_task_runner.py:63} INFO - Started process 624 to run task
+[2026-09-11T10:27:54.121+0000] {task_command.py:426} INFO - Running <TaskInstance: dag_dbt_anp.export_dbt_logs manual__2026-09-11T10:26:12.653584+00:00 [running]> on host 43d133c4f171
+[2026-09-11T10:27:54.557+0000] {taskinstance.py:2644} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='***' AIRFLOW_CTX_DAG_ID='dag_dbt_anp' AIRFLOW_CTX_TASK_ID='export_dbt_logs' AIRFLOW_CTX_EXECUTION_DATE='2026-09-11T10:26:12.653584+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-09-11T10:26:12.653584+00:00'
+[2026-09-11T10:27:54.559+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-09-11T10:27:54.755+0000] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2026-09-11T10:27:54.757+0000] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', 'python3 -u /opt/airflow/pipelines/anp/anp_export_dbt_logs.py']
+[2026-09-11T10:27:54.768+0000] {subprocess.py:86} INFO - Output:
+[2026-09-11T10:27:56.119+0000] {subprocess.py:93} INFO - >>> [START] observability
+[2026-09-11T10:27:56.610+0000] {subprocess.py:93} INFO - >>>>> [SUCCESS] s3 backup done (file sufix: 20260911_102756)
+[2026-09-11T10:27:56.684+0000] {subprocess.py:93} INFO - >>> [END] processing done
+[2026-09-11T10:27:57.507+0000] {subprocess.py:93} INFO - >>> [END] audit table updated
+[2026-09-11T10:27:57.507+0000] {subprocess.py:93} INFO - >>> [END] observability
+[2026-09-11T10:27:57.711+0000] {subprocess.py:97} INFO - Command exited with return code 0
+[2026-09-11T10:27:57.712+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-09-11T10:27:57.877+0000] {taskinstance.py:1205} INFO - Marking task as SUCCESS. dag_id=dag_dbt_anp, task_id=export_dbt_logs, execution_date=20260911T102612, start_date=20260911T102753, end_date=20260911T102757
+[2026-09-11T10:27:57.931+0000] {local_task_job_runner.py:240} INFO - Task exited with return code 0
+[2026-09-11T10:27:58.910+0000] {taskinstance.py:3482} INFO - 0 downstream tasks scheduled from follow-on schedule check
+[2026-09-11T10:27:58.921+0000] {local_task_job_runner.py:222} INFO - ::endgroup::
+
+################################################################################
+--- TASK EXECUTION: generate_elementary_report ---
+################################################################################
+
+[2026-09-11T10:27:19.574+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-09-11T10:27:19.677+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: dag_dbt_anp.generate_elementary_report manual__2026-09-11T10:26:12.653584+00:00 [queued]>
+[2026-09-11T10:27:19.693+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: dag_dbt_anp.generate_elementary_report manual__2026-09-11T10:26:12.653584+00:00 [queued]>
+[2026-09-11T10:27:19.698+0000] {taskinstance.py:2303} INFO - Starting attempt 1 of 2
+[2026-09-11T10:27:19.716+0000] {taskinstance.py:2327} INFO - Executing <Task(BashOperator): generate_elementary_report> on 2026-09-11 10:26:12.653584+00:00
+[2026-09-11T10:27:19.728+0000] {standard_task_runner.py:90} INFO - Running: ['airflow', 'tasks', 'run', 'dag_dbt_anp', 'generate_elementary_report', 'manual__2026-09-11T10:26:12.653584+00:00', '--job-id', '525', '--raw', '--subdir', 'DAGS_FOLDER/dag_dbt_anp.py', '--cfg-path', '/tmp/tmpohsjmq_6']
+[2026-09-11T10:27:19.732+0000] {standard_task_runner.py:91} INFO - Job 525: Subtask generate_elementary_report
+[2026-09-11T10:27:19.733+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/task/task_runner/standard_task_runner.py:61 DeprecationWarning: This process (pid=607) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2026-09-11T10:27:19.734+0000] {standard_task_runner.py:63} INFO - Started process 608 to run task
+[2026-09-11T10:27:19.990+0000] {task_command.py:426} INFO - Running <TaskInstance: dag_dbt_anp.generate_elementary_report manual__2026-09-11T10:26:12.653584+00:00 [running]> on host 43d133c4f171
+[2026-09-11T10:27:20.444+0000] {taskinstance.py:2644} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='***' AIRFLOW_CTX_DAG_ID='dag_dbt_anp' AIRFLOW_CTX_TASK_ID='generate_elementary_report' AIRFLOW_CTX_EXECUTION_DATE='2026-09-11T10:26:12.653584+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-09-11T10:26:12.653584+00:00'
+[2026-09-11T10:27:20.446+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-09-11T10:27:20.634+0000] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2026-09-11T10:27:20.636+0000] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', 'DBT_PACKAGES_DIR=/tmp /opt/airflow/dbt_venv/bin/edr report --project-dir /opt/airflow/pipelines/dbt_projects --profiles-dir /opt/airflow/pipelines/dbt_projects']
+[2026-09-11T10:27:20.648+0000] {subprocess.py:86} INFO - Output:
+[2026-09-11T10:27:22.208+0000] {subprocess.py:93} INFO - 
+[2026-09-11T10:27:22.208+0000] {subprocess.py:93} INFO -     ________                          __
+[2026-09-11T10:27:22.209+0000] {subprocess.py:93} INFO -    / ____/ /__  ____ ___  ___  ____  / /_____ ________  __
+[2026-09-11T10:27:22.209+0000] {subprocess.py:93} INFO -   / __/ / / _ \/ __ `__ \/ _ \/ __ \/ __/ __ `/ ___/ / / /
+[2026-09-11T10:27:22.210+0000] {subprocess.py:93} INFO -  / /___/ /  __/ / / / / /  __/ / / / /_/ /_/ / /  / /_/ /
+[2026-09-11T10:27:22.211+0000] {subprocess.py:93} INFO - /_____/_/\___/_/ /_/ /_/\___/_/ /_/\__/\__,_/_/   \__, /
+[2026-09-11T10:27:22.211+0000] {subprocess.py:93} INFO -                                                  /____/
+[2026-09-11T10:27:22.212+0000] {subprocess.py:93} INFO - 
+[2026-09-11T10:27:22.212+0000] {subprocess.py:93} INFO - 
+[2026-09-11T10:27:22.423+0000] {subprocess.py:93} INFO - Any feedback and suggestions are welcomed! join our community here - https://bit.ly/slack-elementary
+[2026-09-11T10:27:22.424+0000] {subprocess.py:93} INFO - 
+[2026-09-11T10:27:22.425+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:22 — INFO — Running with edr=0.26.0
+[2026-09-11T10:27:27.672+0000] {subprocess.py:93} INFO - [33;20m2026-09-11 10:27:27 — WARNING — You are using incompatible versions between edr (0.26.0) and Elementary's dbt package (0.25.1).
+[2026-09-11T10:27:27.673+0000] {subprocess.py:93} INFO -  To fix please update your packages.yml, and run:
+[2026-09-11T10:27:27.673+0000] {subprocess.py:93} INFO - dbt deps && dbt run --select elementary
+[2026-09-11T10:27:27.674+0000] {subprocess.py:93} INFO - [0m
+[2026-09-11T10:27:28.878+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:28 — INFO — Elementary's database and schema: '***.bronze'
+[2026-09-11T10:27:28.880+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:28 — INFO — Running dbt command --log-format json run-operation elementary.log_macro_results --args {"macro_name": "elementary_cli.get_test_results", "macro_args": {"days_back": 7, "invocations_per_test": 720, "disable_passed_test_metrics": false, "skip_test_result_rows": false}} --project-dir /opt/airflow/dbt_venv/lib/python3.12/site-packages/elementary/monitor/dbt_project --profiles-dir /opt/airflow/pipelines/dbt_projects
+[2026-09-11T10:27:33.924+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:33 — INFO — Running dbt command --log-format json run-operation elementary.log_macro_results --args {"macro_name": "elementary_cli.get_source_freshness_results", "macro_args": {"days_back": 7, "invocations_per_test": 720}} --project-dir /opt/airflow/dbt_venv/lib/python3.12/site-packages/elementary/monitor/dbt_project --profiles-dir /opt/airflow/pipelines/dbt_projects
+[2026-09-11T10:27:35.305+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:35 — INFO — Running dbt command --log-format json run-operation elementary.log_macro_results --args {"macro_name": "elementary_cli.get_seeds", "macro_args": {}} --project-dir /opt/airflow/dbt_venv/lib/python3.12/site-packages/elementary/monitor/dbt_project --profiles-dir /opt/airflow/pipelines/dbt_projects
+[2026-09-11T10:27:36.585+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:36 — INFO — Running dbt command --log-format json run-operation elementary.log_macro_results --args {"macro_name": "elementary_cli.get_snapshots", "macro_args": {}} --project-dir /opt/airflow/dbt_venv/lib/python3.12/site-packages/elementary/monitor/dbt_project --profiles-dir /opt/airflow/pipelines/dbt_projects
+[2026-09-11T10:27:37.967+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:37 — INFO — Running dbt command --log-format json run-operation elementary.log_macro_results --args {"macro_name": "elementary_cli.get_models", "macro_args": {"exclude_elementary": true}} --project-dir /opt/airflow/dbt_venv/lib/python3.12/site-packages/elementary/monitor/dbt_project --profiles-dir /opt/airflow/pipelines/dbt_projects
+[2026-09-11T10:27:39.359+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:39 — INFO — Running dbt command --log-format json run-operation elementary.log_macro_results --args {"macro_name": "elementary_cli.get_sources", "macro_args": {}} --project-dir /opt/airflow/dbt_venv/lib/python3.12/site-packages/elementary/monitor/dbt_project --profiles-dir /opt/airflow/pipelines/dbt_projects
+[2026-09-11T10:27:40.660+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:40 — INFO — Running dbt command --log-format json run-operation elementary.log_macro_results --args {"macro_name": "elementary_cli.get_exposures", "macro_args": {}} --project-dir /opt/airflow/dbt_venv/lib/python3.12/site-packages/elementary/monitor/dbt_project --profiles-dir /opt/airflow/pipelines/dbt_projects
+[2026-09-11T10:27:42.149+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:42 — INFO — Running dbt command --log-format json run-operation elementary.log_macro_results --args {"macro_name": "elementary_cli.get_singular_tests", "macro_args": {}} --project-dir /opt/airflow/dbt_venv/lib/python3.12/site-packages/elementary/monitor/dbt_project --profiles-dir /opt/airflow/pipelines/dbt_projects
+[2026-09-11T10:27:43.300+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:43 — INFO — Running dbt command --log-format json run-operation elementary.log_macro_results --args {"macro_name": "elementary_cli.get_models_runs", "macro_args": {"days_back": 7, "exclude_elementary": true}} --project-dir /opt/airflow/dbt_venv/lib/python3.12/site-packages/elementary/monitor/dbt_project --profiles-dir /opt/airflow/pipelines/dbt_projects
+[2026-09-11T10:27:44.724+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:44 — INFO — Running dbt command --log-format json run-operation elementary.log_macro_results --args {"macro_name": "elementary_cli.get_dbt_models_test_coverage", "macro_args": {}} --project-dir /opt/airflow/dbt_venv/lib/python3.12/site-packages/elementary/monitor/dbt_project --profiles-dir /opt/airflow/pipelines/dbt_projects
+[2026-09-11T10:27:46.094+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:46 — INFO — Running dbt command --log-format json run-operation elementary.log_macro_results --args {"macro_name": "elementary_cli.get_tests", "macro_args": {}} --project-dir /opt/airflow/dbt_venv/lib/python3.12/site-packages/elementary/monitor/dbt_project --profiles-dir /opt/airflow/pipelines/dbt_projects
+[2026-09-11T10:27:47.507+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:47 — INFO — Running dbt command --log-format json run-operation elementary.log_macro_results --args {"macro_name": "elementary_cli.get_nodes_depends_on_nodes", "macro_args": {"exclude_elementary": true}} --project-dir /opt/airflow/dbt_venv/lib/python3.12/site-packages/elementary/monitor/dbt_project --profiles-dir /opt/airflow/pipelines/dbt_projects
+[2026-09-11T10:27:48.882+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:48 — INFO — Running dbt command --log-format json run-operation elementary.log_macro_results --args {"macro_name": "elementary_cli.get_models_latest_invocation", "macro_args": {}} --project-dir /opt/airflow/dbt_venv/lib/python3.12/site-packages/elementary/monitor/dbt_project --profiles-dir /opt/airflow/pipelines/dbt_projects
+[2026-09-11T10:27:50.133+0000] {subprocess.py:93} INFO - 2026-09-11 10:27:50 — INFO — Running dbt command --log-format json run-operation elementary.log_macro_results --args {"macro_name": "elementary_cli.get_models_latest_invocations_data", "macro_args": {}} --project-dir /opt/airflow/dbt_venv/lib/python3.12/site-packages/elementary/monitor/dbt_project --profiles-dir /opt/airflow/pipelines/dbt_projects
+[2026-09-11T10:27:52.330+0000] {subprocess.py:97} INFO - Command exited with return code 0
+[2026-09-11T10:27:52.333+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-09-11T10:27:52.521+0000] {taskinstance.py:1205} INFO - Marking task as SUCCESS. dag_id=dag_dbt_anp, task_id=generate_elementary_report, execution_date=20260911T102612, start_date=20260911T102719, end_date=20260911T102752
+[2026-09-11T10:27:52.606+0000] {local_task_job_runner.py:240} INFO - Task exited with return code 0
+[2026-09-11T10:27:52.705+0000] {taskinstance.py:3482} INFO - 1 downstream tasks scheduled from follow-on schedule check
+[2026-09-11T10:27:52.710+0000] {local_task_job_runner.py:222} INFO - ::endgroup::
+
+################################################################################
+--- TASK EXECUTION: run_elementary_models ---
+################################################################################
+
+[2026-09-11T10:26:50.476+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-09-11T10:26:50.587+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: dag_dbt_anp.run_elementary_models manual__2026-09-11T10:26:12.653584+00:00 [queued]>
+[2026-09-11T10:26:50.602+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: dag_dbt_anp.run_elementary_models manual__2026-09-11T10:26:12.653584+00:00 [queued]>
+[2026-09-11T10:26:50.603+0000] {taskinstance.py:2303} INFO - Starting attempt 1 of 2
+[2026-09-11T10:26:50.631+0000] {taskinstance.py:2327} INFO - Executing <Task(BashOperator): run_elementary_models> on 2026-09-11 10:26:12.653584+00:00
+[2026-09-11T10:26:50.641+0000] {standard_task_runner.py:90} INFO - Running: ['airflow', 'tasks', 'run', 'dag_dbt_anp', 'run_elementary_models', 'manual__2026-09-11T10:26:12.653584+00:00', '--job-id', '524', '--raw', '--subdir', 'DAGS_FOLDER/dag_dbt_anp.py', '--cfg-path', '/tmp/tmpa3jwrf9e']
+[2026-09-11T10:26:50.644+0000] {standard_task_runner.py:91} INFO - Job 524: Subtask run_elementary_models
+[2026-09-11T10:26:50.646+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/task/task_runner/standard_task_runner.py:61 DeprecationWarning: This process (pid=573) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2026-09-11T10:26:50.647+0000] {standard_task_runner.py:63} INFO - Started process 574 to run task
+[2026-09-11T10:26:50.910+0000] {task_command.py:426} INFO - Running <TaskInstance: dag_dbt_anp.run_elementary_models manual__2026-09-11T10:26:12.653584+00:00 [running]> on host 43d133c4f171
+[2026-09-11T10:26:51.434+0000] {taskinstance.py:2644} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='***' AIRFLOW_CTX_DAG_ID='dag_dbt_anp' AIRFLOW_CTX_TASK_ID='run_elementary_models' AIRFLOW_CTX_EXECUTION_DATE='2026-09-11T10:26:12.653584+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-09-11T10:26:12.653584+00:00'
+[2026-09-11T10:26:51.436+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-09-11T10:26:51.664+0000] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2026-09-11T10:26:51.666+0000] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', '/opt/airflow/dbt_venv/bin/dbt run --select elementary --project-dir /opt/airflow/pipelines/dbt_projects --profiles-dir /opt/airflow/pipelines/dbt_projects --profile *** --target dev']
+[2026-09-11T10:26:51.677+0000] {subprocess.py:86} INFO - Output:
+[2026-09-11T10:26:54.373+0000] {subprocess.py:93} INFO - [0m10:26:54  Running with dbt=1.12.4
+[2026-09-11T10:26:54.711+0000] {subprocess.py:93} INFO - [0m10:26:54  Registered adapter: postgres=1.11.0
+[2026-09-11T10:26:55.099+0000] {subprocess.py:93} INFO - [0m10:26:55  Unable to do partial parsing because of a version mismatch
+[2026-09-11T10:27:06.515+0000] {subprocess.py:93} INFO - [0m10:27:06  Found 36 models, 2 operations, 19 data tests, 2 sources, 1690 macros
+[2026-09-11T10:27:06.524+0000] {subprocess.py:93} INFO - [0m10:27:06
+[2026-09-11T10:27:06.526+0000] {subprocess.py:93} INFO - [0m10:27:06  Concurrency: 4 threads (target='dev')
+[2026-09-11T10:27:06.527+0000] {subprocess.py:93} INFO - [0m10:27:06
+[2026-09-11T10:27:07.048+0000] {subprocess.py:93} INFO - [0m10:27:07  Elementary: Runtime data: {"config": {}, "dbt_version": "1.12.4", "elementary_version": "0.25.1", "database": "***", "schema": "bronze"}
+[2026-09-11T10:27:07.079+0000] {subprocess.py:93} INFO - [0m10:27:07  1 of 1 START hook: elementary.on-run-start.0 ................................... [RUN]
+[2026-09-11T10:27:07.081+0000] {subprocess.py:93} INFO - [0m10:27:07  1 of 1 OK hook: elementary.on-run-start.0 ...................................... [[32mOK[0m in 0.06s]
+[2026-09-11T10:27:07.082+0000] {subprocess.py:93} INFO - [0m10:27:07
+[2026-09-11T10:27:07.099+0000] {subprocess.py:93} INFO - [0m10:27:07  1 of 30 START sql incremental model bronze.data_monitoring_metrics ............. [RUN]
+[2026-09-11T10:27:07.101+0000] {subprocess.py:93} INFO - [0m10:27:07  2 of 30 START sql incremental model bronze.dbt_columns ......................... [RUN]
+[2026-09-11T10:27:07.103+0000] {subprocess.py:93} INFO - [0m10:27:07  3 of 30 START sql incremental model bronze.dbt_exposures ....................... [RUN]
+[2026-09-11T10:27:07.105+0000] {subprocess.py:93} INFO - [0m10:27:07  4 of 30 START sql incremental model bronze.dbt_groups .......................... [RUN]
+[2026-09-11T10:27:08.400+0000] {subprocess.py:93} INFO - [0m10:27:08  1 of 30 OK created sql incremental model bronze.data_monitoring_metrics ........ [[32mINSERT 0 0[0m in 1.27s]
+[2026-09-11T10:27:08.433+0000] {subprocess.py:93} INFO - [0m10:27:08  5 of 30 START sql incremental model bronze.dbt_invocations ..................... [RUN]
+[2026-09-11T10:27:08.512+0000] {subprocess.py:93} INFO - [0m10:27:08  3 of 30 OK created sql incremental model bronze.dbt_exposures .................. [[32mINSERT 0 0[0m in 1.40s]
+[2026-09-11T10:27:08.529+0000] {subprocess.py:93} INFO - [0m10:27:08  4 of 30 OK created sql incremental model bronze.dbt_groups ..................... [[32mINSERT 0 0[0m in 1.41s]
+[2026-09-11T10:27:08.544+0000] {subprocess.py:93} INFO - [0m10:27:08  6 of 30 START sql incremental model bronze.dbt_metrics ......................... [RUN]
+[2026-09-11T10:27:08.570+0000] {subprocess.py:93} INFO - [0m10:27:08  7 of 30 START sql incremental model bronze.dbt_models .......................... [RUN]
+[2026-09-11T10:27:08.575+0000] {subprocess.py:93} INFO - [0m10:27:08  2 of 30 OK created sql incremental model bronze.dbt_columns .................... [[32mINSERT 0 0[0m in 1.45s]
+[2026-09-11T10:27:08.659+0000] {subprocess.py:93} INFO - [0m10:27:08  8 of 30 START sql incremental model bronze.dbt_run_results ..................... [RUN]
+[2026-09-11T10:27:09.003+0000] {subprocess.py:93} INFO - [0m10:27:09  5 of 30 OK created sql incremental model bronze.dbt_invocations ................ [[32mINSERT 0 0[0m in 0.55s]
+[2026-09-11T10:27:09.013+0000] {subprocess.py:93} INFO - [0m10:27:09  9 of 30 START sql incremental model bronze.dbt_seeds ........................... [RUN]
+[2026-09-11T10:27:09.240+0000] {subprocess.py:93} INFO - [0m10:27:09  8 of 30 OK created sql incremental model bronze.dbt_run_results ................ [[32mINSERT 0 0[0m in 0.57s]
+[2026-09-11T10:27:09.248+0000] {subprocess.py:93} INFO - [0m10:27:09  10 of 30 START sql incremental model bronze.dbt_snapshots ...................... [RUN]
+[2026-09-11T10:27:09.263+0000] {subprocess.py:93} INFO - [0m10:27:09  6 of 30 OK created sql incremental model bronze.dbt_metrics .................... [[32mINSERT 0 0[0m in 0.70s]
+[2026-09-11T10:27:09.308+0000] {subprocess.py:93} INFO - [0m10:27:09  7 of 30 OK created sql incremental model bronze.dbt_models ..................... [[32mINSERT 0 0[0m in 0.69s]
+[2026-09-11T10:27:09.313+0000] {subprocess.py:93} INFO - [0m10:27:09  11 of 30 START sql incremental model bronze.dbt_source_freshness_results ....... [RUN]
+[2026-09-11T10:27:09.338+0000] {subprocess.py:93} INFO - [0m10:27:09  12 of 30 START sql incremental model bronze.dbt_sources ........................ [RUN]
+[2026-09-11T10:27:09.645+0000] {subprocess.py:93} INFO - [0m10:27:09  9 of 30 OK created sql incremental model bronze.dbt_seeds ...................... [[32mINSERT 0 0[0m in 0.61s]
+[2026-09-11T10:27:09.678+0000] {subprocess.py:93} INFO - [0m10:27:09  13 of 30 START sql incremental model bronze.dbt_tests .......................... [RUN]
+[2026-09-11T10:27:09.830+0000] {subprocess.py:93} INFO - [0m10:27:09  11 of 30 OK created sql incremental model bronze.dbt_source_freshness_results .. [[32mINSERT 0 0[0m in 0.51s]
+[2026-09-11T10:27:09.879+0000] {subprocess.py:93} INFO - [0m10:27:09  14 of 30 START sql incremental model bronze.elementary_test_results ............ [RUN]
+[2026-09-11T10:27:09.932+0000] {subprocess.py:93} INFO - [0m10:27:09  10 of 30 OK created sql incremental model bronze.dbt_snapshots ................. [[32mINSERT 0 0[0m in 0.67s]
+[2026-09-11T10:27:09.949+0000] {subprocess.py:93} INFO - [0m10:27:09  15 of 30 START sql table model bronze.metadata ................................. [RUN]
+[2026-09-11T10:27:09.986+0000] {subprocess.py:93} INFO - [0m10:27:09  12 of 30 OK created sql incremental model bronze.dbt_sources ................... [[32mINSERT 0 0[0m in 0.62s]
+[2026-09-11T10:27:10.025+0000] {subprocess.py:93} INFO - [0m10:27:10  16 of 30 START sql incremental model bronze.schema_columns_snapshot ............ [RUN]
+[2026-09-11T10:27:10.640+0000] {subprocess.py:93} INFO - [0m10:27:10  13 of 30 OK created sql incremental model bronze.dbt_tests ..................... [[32mINSERT 0 0[0m in 0.95s]
+[2026-09-11T10:27:10.665+0000] {subprocess.py:93} INFO - [0m10:27:10  15 of 30 OK created sql table model bronze.metadata ............................ [[32mSELECT 1[0m in 0.70s]
+[2026-09-11T10:27:10.667+0000] {subprocess.py:93} INFO - [0m10:27:10  17 of 30 START sql view model bronze.metrics_anomaly_score ..................... [RUN]
+[2026-09-11T10:27:10.683+0000] {subprocess.py:93} INFO - [0m10:27:10  18 of 30 START sql view model bronze.monitors_runs ............................. [RUN]
+[2026-09-11T10:27:10.718+0000] {subprocess.py:93} INFO - [0m10:27:10  14 of 30 OK created sql incremental model bronze.elementary_test_results ....... [[32mINSERT 0 0[0m in 0.83s]
+[2026-09-11T10:27:10.725+0000] {subprocess.py:93} INFO - [0m10:27:10  19 of 30 START sql view model bronze.job_run_results ........................... [RUN]
+[2026-09-11T10:27:10.799+0000] {subprocess.py:93} INFO - [0m10:27:10  16 of 30 OK created sql incremental model bronze.schema_columns_snapshot ....... [[32mINSERT 0 0[0m in 0.76s]
+[2026-09-11T10:27:10.809+0000] {subprocess.py:93} INFO - [0m10:27:10  20 of 30 START sql view model bronze.model_run_results ......................... [RUN]
+[2026-09-11T10:27:11.138+0000] {subprocess.py:93} INFO - [0m10:27:11  19 of 30 OK created sql view model bronze.job_run_results ...................... [[32mCREATE VIEW[0m in 0.41s]
+[2026-09-11T10:27:11.148+0000] {subprocess.py:93} INFO - [0m10:27:11  21 of 30 START sql view model bronze.seed_run_results .......................... [RUN]
+[2026-09-11T10:27:11.163+0000] {subprocess.py:93} INFO - [0m10:27:11  18 of 30 OK created sql view model bronze.monitors_runs ........................ [[32mCREATE VIEW[0m in 0.46s]
+[2026-09-11T10:27:11.167+0000] {subprocess.py:93} INFO - [0m10:27:11  17 of 30 OK created sql view model bronze.metrics_anomaly_score ................ [[32mCREATE VIEW[0m in 0.48s]
+[2026-09-11T10:27:11.168+0000] {subprocess.py:93} INFO - [0m10:27:11  20 of 30 OK created sql view model bronze.model_run_results .................... [[32mCREATE VIEW[0m in 0.33s]
+[2026-09-11T10:27:11.182+0000] {subprocess.py:93} INFO - [0m10:27:11  22 of 30 START sql view model bronze.snapshot_run_results ...................... [RUN]
+[2026-09-11T10:27:11.184+0000] {subprocess.py:93} INFO - [0m10:27:11  23 of 30 START sql view model bronze.alerts_dbt_source_freshness ............... [RUN]
+[2026-09-11T10:27:11.185+0000] {subprocess.py:93} INFO - [0m10:27:11  24 of 30 START sql view model bronze.dbt_artifacts_hashes ...................... [RUN]
+[2026-09-11T10:27:11.657+0000] {subprocess.py:93} INFO - [0m10:27:11  21 of 30 OK created sql view model bronze.seed_run_results ..................... [[32mCREATE VIEW[0m in 0.49s]
+[2026-09-11T10:27:11.676+0000] {subprocess.py:93} INFO - [0m10:27:11  25 of 30 START sql view model bronze.alerts_anomaly_detection .................. [RUN]
+[2026-09-11T10:27:12.568+0000] {subprocess.py:93} INFO - [0m10:27:12  23 of 30 OK created sql view model bronze.alerts_dbt_source_freshness .......... [[32mCREATE VIEW[0m in 0.50s]
+[2026-09-11T10:27:12.572+0000] {subprocess.py:93} INFO - [0m10:27:12  22 of 30 OK created sql view model bronze.snapshot_run_results ................. [[32mCREATE VIEW[0m in 0.52s]
+[2026-09-11T10:27:12.577+0000] {subprocess.py:93} INFO - [0m10:27:12  25 of 30 OK created sql view model bronze.alerts_anomaly_detection ............. [[32mCREATE VIEW[0m in 0.19s]
+[2026-09-11T10:27:12.578+0000] {subprocess.py:93} INFO - [0m10:27:12  24 of 30 OK created sql view model bronze.dbt_artifacts_hashes ................. [[32mCREATE VIEW[0m in 0.48s]
+[2026-09-11T10:27:12.594+0000] {subprocess.py:93} INFO - [0m10:27:12  26 of 30 START sql view model bronze.alerts_dbt_tests .......................... [RUN]
+[2026-09-11T10:27:12.596+0000] {subprocess.py:93} INFO - [0m10:27:12  27 of 30 START sql view model bronze.alerts_schema_changes ..................... [RUN]
+[2026-09-11T10:27:12.597+0000] {subprocess.py:93} INFO - [0m10:27:12  28 of 30 START sql incremental model bronze.test_result_rows ................... [RUN]
+[2026-09-11T10:27:12.600+0000] {subprocess.py:93} INFO - [0m10:27:12  29 of 30 START sql view model bronze.anomaly_threshold_sensitivity ............. [RUN]
+[2026-09-11T10:27:12.970+0000] {subprocess.py:93} INFO - [0m10:27:12  29 of 30 OK created sql view model bronze.anomaly_threshold_sensitivity ........ [[32mCREATE VIEW[0m in 0.36s]
+[2026-09-11T10:27:12.991+0000] {subprocess.py:93} INFO - [0m10:27:12  26 of 30 OK created sql view model bronze.alerts_dbt_tests ..................... [[32mCREATE VIEW[0m in 0.38s]
+[2026-09-11T10:27:13.004+0000] {subprocess.py:93} INFO - [0m10:27:13  30 of 30 START sql view model bronze.alerts_dbt_models ......................... [RUN]
+[2026-09-11T10:27:13.007+0000] {subprocess.py:93} INFO - [0m10:27:13  27 of 30 OK created sql view model bronze.alerts_schema_changes ................ [[32mCREATE VIEW[0m in 0.39s]
+[2026-09-11T10:27:13.059+0000] {subprocess.py:93} INFO - [0m10:27:13  28 of 30 OK created sql incremental model bronze.test_result_rows .............. [[32mINSERT 0 0[0m in 0.45s]
+[2026-09-11T10:27:13.192+0000] {subprocess.py:93} INFO - [0m10:27:13  30 of 30 OK created sql view model bronze.alerts_dbt_models .................... [[32mCREATE VIEW[0m in 0.18s]
+[2026-09-11T10:27:13.200+0000] {subprocess.py:93} INFO - [0m10:27:13
+[2026-09-11T10:27:15.890+0000] {subprocess.py:93} INFO - [0m10:27:15  1 of 1 START hook: elementary.on-run-end.0 ..................................... [RUN]
+[2026-09-11T10:27:15.892+0000] {subprocess.py:93} INFO - [0m10:27:15  1 of 1 OK hook: elementary.on-run-end.0 ........................................ [[32mOK[0m in 2.63s]
+[2026-09-11T10:27:15.905+0000] {subprocess.py:93} INFO - [0m10:27:15
+[2026-09-11T10:27:15.907+0000] {subprocess.py:93} INFO - [0m10:27:15  Finished running 16 incremental models, 2 project hooks, 1 table model, 13 view models in 0 hours 0 minutes and 9.38 seconds (9.38s).
+[2026-09-11T10:27:16.261+0000] {subprocess.py:93} INFO - [0m10:27:16
+[2026-09-11T10:27:16.263+0000] {subprocess.py:93} INFO - [0m10:27:16  [32mCompleted successfully[0m
+[2026-09-11T10:27:16.265+0000] {subprocess.py:93} INFO - [0m10:27:16
+[2026-09-11T10:27:16.268+0000] {subprocess.py:93} INFO - [0m10:27:16  Done. PASS=32 WARN=0 ERROR=0 SKIP=0 NO-OP=0 REUSED=0 TOTAL=32
+[2026-09-11T10:27:17.522+0000] {subprocess.py:97} INFO - Command exited with return code 0
+[2026-09-11T10:27:17.524+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-09-11T10:27:17.789+0000] {taskinstance.py:1205} INFO - Marking task as SUCCESS. dag_id=dag_dbt_anp, task_id=run_elementary_models, execution_date=20260911T102612, start_date=20260911T102650, end_date=20260911T102717
+[2026-09-11T10:27:17.863+0000] {local_task_job_runner.py:240} INFO - Task exited with return code 0
+[2026-09-11T10:27:17.962+0000] {taskinstance.py:3482} INFO - 1 downstream tasks scheduled from follow-on schedule check
+[2026-09-11T10:27:17.967+0000] {local_task_job_runner.py:222} INFO - ::endgroup::
+
+################################################################################
+--- TASK EXECUTION: scrap_mensal ---
+################################################################################
+
+[2026-09-11T10:26:38.239+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-09-11T10:26:38.339+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: dag_dbt_anp.scrap_mensal manual__2026-09-11T10:26:12.653584+00:00 [queued]>
+[2026-09-11T10:26:38.357+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: dag_dbt_anp.scrap_mensal manual__2026-09-11T10:26:12.653584+00:00 [queued]>
+[2026-09-11T10:26:38.358+0000] {taskinstance.py:2303} INFO - Starting attempt 1 of 2
+[2026-09-11T10:26:38.380+0000] {taskinstance.py:2327} INFO - Executing <Task(BashOperator): scrap_mensal> on 2026-09-11 10:26:12.653584+00:00
+[2026-09-11T10:26:38.392+0000] {standard_task_runner.py:90} INFO - Running: ['airflow', 'tasks', 'run', 'dag_dbt_anp', 'scrap_mensal', 'manual__2026-09-11T10:26:12.653584+00:00', '--job-id', '522', '--raw', '--subdir', 'DAGS_FOLDER/dag_dbt_anp.py', '--cfg-path', '/tmp/tmp1nmg6go0']
+[2026-09-11T10:26:38.398+0000] {standard_task_runner.py:91} INFO - Job 522: Subtask scrap_mensal
+[2026-09-11T10:26:38.401+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/task/task_runner/standard_task_runner.py:61 DeprecationWarning: This process (pid=539) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2026-09-11T10:26:38.403+0000] {standard_task_runner.py:63} INFO - Started process 540 to run task
+[2026-09-11T10:26:38.676+0000] {task_command.py:426} INFO - Running <TaskInstance: dag_dbt_anp.scrap_mensal manual__2026-09-11T10:26:12.653584+00:00 [running]> on host 43d133c4f171
+[2026-09-11T10:26:39.102+0000] {taskinstance.py:2644} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='***' AIRFLOW_CTX_DAG_ID='dag_dbt_anp' AIRFLOW_CTX_TASK_ID='scrap_mensal' AIRFLOW_CTX_EXECUTION_DATE='2026-09-11T10:26:12.653584+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-09-11T10:26:12.653584+00:00'
+[2026-09-11T10:26:39.104+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-09-11T10:26:39.359+0000] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2026-09-11T10:26:39.360+0000] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', 'python3 -u /opt/airflow/pipelines/anp/anp_02_anp_month_file_scrap.py']
+[2026-09-11T10:26:39.374+0000] {subprocess.py:86} INFO - Output:
+[2026-09-11T10:26:40.842+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [DW_CLIENT] ############################################################
+[2026-09-11T10:26:40.843+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [DW_CLIENT] db env vars validation
+[2026-09-11T10:26:40.843+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [DW_CLIENT] db env vars found successfully
+[2026-09-11T10:26:40.844+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [DW_CLIENT] attempting to connect to host - [postgres]
+[2026-09-11T10:26:40.907+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [DW_CLIENT] handshake success [***]
+[2026-09-11T10:26:40.907+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [DW_CLIENT] connection test finished
+[2026-09-11T10:26:40.908+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [DW_CLIENT] ############################################################
+[2026-09-11T10:26:40.927+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [anp_02_anp_month_file_scrap] ============================================================
+[2026-09-11T10:26:40.927+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [anp_02_anp_month_file_scrap] web scrapping initiated on https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/serie-historica-de-precos-de-combustiveis : 2026-09-11 10:26:40.927002
+[2026-09-11T10:26:40.928+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [anp_02_anp_month_file_scrap] files landing dir  /mnt/datasource/anp/arquivos_fechados : 2026-09-11 10:26:40.927111
+[2026-09-11T10:26:40.929+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [anp_02_anp_month_file_scrap] ============================================================
+[2026-09-11T10:26:41.334+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:41] [INFO] [anp_02_anp_month_file_scrap] reading ctrl table to identify pending files
+[2026-09-11T10:26:41.630+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:41] [INFO] [anp_02_anp_month_file_scrap] test mode activated: filtering payload for 2026 files only
+[2026-09-11T10:26:41.632+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:41] [WARNING] [anp_02_anp_month_file_scrap] lakehouse is already up to date. skipping download
+[2026-09-11T10:26:41.632+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:41] [WARNING] [anp_02_anp_month_file_scrap] pipeline run ended with no new data to process
+[2026-09-11T10:26:41.757+0000] {subprocess.py:97} INFO - Command exited with return code 99
+[2026-09-11T10:26:41.758+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-09-11T10:26:41.758+0000] {taskinstance.py:2502} INFO - Bash command returned exit code 99. Skipping.
+[2026-09-11T10:26:41.847+0000] {taskinstance.py:1205} INFO - Marking task as SKIPPED. dag_id=dag_dbt_anp, task_id=scrap_mensal, execution_date=20260911T102612, start_date=20260911T102638, end_date=20260911T102641
+[2026-09-11T10:26:41.991+0000] {local_task_job_runner.py:240} INFO - Task exited with return code 0
+[2026-09-11T10:26:42.106+0000] {taskinstance.py:3482} INFO - 0 downstream tasks scheduled from follow-on schedule check
+[2026-09-11T10:26:42.113+0000] {local_task_job_runner.py:222} INFO - ::endgroup::
+
+################################################################################
+--- TASK EXECUTION: scrap_semanal ---
+################################################################################
+
+[2026-09-11T10:26:38.247+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-09-11T10:26:38.351+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: dag_dbt_anp.scrap_semanal manual__2026-09-11T10:26:12.653584+00:00 [queued]>
+[2026-09-11T10:26:38.367+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: dag_dbt_anp.scrap_semanal manual__2026-09-11T10:26:12.653584+00:00 [queued]>
+[2026-09-11T10:26:38.368+0000] {taskinstance.py:2303} INFO - Starting attempt 1 of 2
+[2026-09-11T10:26:38.396+0000] {taskinstance.py:2327} INFO - Executing <Task(BashOperator): scrap_semanal> on 2026-09-11 10:26:12.653584+00:00
+[2026-09-11T10:26:38.409+0000] {standard_task_runner.py:90} INFO - Running: ['airflow', 'tasks', 'run', 'dag_dbt_anp', 'scrap_semanal', 'manual__2026-09-11T10:26:12.653584+00:00', '--job-id', '523', '--raw', '--subdir', 'DAGS_FOLDER/dag_dbt_anp.py', '--cfg-path', '/tmp/tmp_34_c36f']
+[2026-09-11T10:26:38.416+0000] {standard_task_runner.py:91} INFO - Job 523: Subtask scrap_semanal
+[2026-09-11T10:26:38.416+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/task/task_runner/standard_task_runner.py:61 DeprecationWarning: This process (pid=538) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2026-09-11T10:26:38.418+0000] {standard_task_runner.py:63} INFO - Started process 541 to run task
+[2026-09-11T10:26:38.687+0000] {task_command.py:426} INFO - Running <TaskInstance: dag_dbt_anp.scrap_semanal manual__2026-09-11T10:26:12.653584+00:00 [running]> on host 43d133c4f171
+[2026-09-11T10:26:39.109+0000] {taskinstance.py:2644} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='***' AIRFLOW_CTX_DAG_ID='dag_dbt_anp' AIRFLOW_CTX_TASK_ID='scrap_semanal' AIRFLOW_CTX_EXECUTION_DATE='2026-09-11T10:26:12.653584+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-09-11T10:26:12.653584+00:00'
+[2026-09-11T10:26:39.110+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-09-11T10:26:39.361+0000] {subprocess.py:63} INFO - Tmp dir root location: /tmp
+[2026-09-11T10:26:39.363+0000] {subprocess.py:75} INFO - Running command: ['/usr/bin/bash', '-c', 'python3 -u /opt/airflow/pipelines/anp/anp_01_anp_week_file_scrap.py']
+[2026-09-11T10:26:39.376+0000] {subprocess.py:86} INFO - Output:
+[2026-09-11T10:26:40.870+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [DW_CLIENT] ############################################################
+[2026-09-11T10:26:40.871+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [DW_CLIENT] db env vars validation
+[2026-09-11T10:26:40.872+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [DW_CLIENT] db env vars found successfully
+[2026-09-11T10:26:40.873+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [DW_CLIENT] attempting to connect to host - [postgres]
+[2026-09-11T10:26:40.926+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [DW_CLIENT] handshake success [***]
+[2026-09-11T10:26:40.927+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [DW_CLIENT] connection test finished
+[2026-09-11T10:26:40.928+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [DW_CLIENT] ############################################################
+[2026-09-11T10:26:40.945+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [anp_01_anp_week_file_scrap] ============================================================
+[2026-09-11T10:26:40.946+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [anp_01_anp_week_file_scrap] web scrapping initiated on https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/serie-historica-de-precos-de-combustiveis : 2026-09-11 10:26:40.945367
+[2026-09-11T10:26:40.947+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [anp_01_anp_week_file_scrap] files landing dir  /mnt/datasource/anp/ult4 : 2026-09-11 10:26:40.945452
+[2026-09-11T10:26:40.947+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:40] [INFO] [anp_01_anp_week_file_scrap] ============================================================
+[2026-09-11T10:26:41.480+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:41] [INFO] [anp_01_anp_week_file_scrap] recovered date param from scrapping >> 2026-09-04
+[2026-09-11T10:26:41.687+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:41] [INFO] [anp_01_anp_week_file_scrap] last date on ctrl database >> 2026-09-04
+[2026-09-11T10:26:41.687+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:41] [WARNING] [anp_01_anp_week_file_scrap] lakehouse is already up to date. skipping download
+[2026-09-11T10:26:41.688+0000] {subprocess.py:93} INFO - [2026-09-11 10:26:41] [WARNING] [anp_01_anp_week_file_scrap] pipeline run ended with no new data to process
+[2026-09-11T10:26:41.817+0000] {subprocess.py:97} INFO - Command exited with return code 99
+[2026-09-11T10:26:41.818+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-09-11T10:26:41.819+0000] {taskinstance.py:2502} INFO - Bash command returned exit code 99. Skipping.
+[2026-09-11T10:26:41.896+0000] {taskinstance.py:1205} INFO - Marking task as SKIPPED. dag_id=dag_dbt_anp, task_id=scrap_semanal, execution_date=20260911T102612, start_date=20260911T102638, end_date=20260911T102641
+[2026-09-11T10:26:42.006+0000] {local_task_job_runner.py:240} INFO - Task exited with return code 0
+[2026-09-11T10:26:42.154+0000] {taskinstance.py:3482} INFO - 0 downstream tasks scheduled from follow-on schedule check
+[2026-09-11T10:26:42.161+0000] {local_task_job_runner.py:222} INFO - ::endgroup::
+
+################################################################################
+--- TASK EXECUTION: trigger_setup_infra ---
+################################################################################
+
+[2026-09-11T10:26:14.188+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-09-11T10:26:14.295+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: dag_dbt_anp.trigger_setup_infra manual__2026-09-11T10:26:12.653584+00:00 [queued]>
+[2026-09-11T10:26:14.310+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: dag_dbt_anp.trigger_setup_infra manual__2026-09-11T10:26:12.653584+00:00 [queued]>
+[2026-09-11T10:26:14.315+0000] {taskinstance.py:2303} INFO - Starting attempt 1 of 2
+[2026-09-11T10:26:14.337+0000] {taskinstance.py:2327} INFO - Executing <Task(TriggerDagRunOperator): trigger_setup_infra> on 2026-09-11 10:26:12.653584+00:00
+[2026-09-11T10:26:14.349+0000] {standard_task_runner.py:90} INFO - Running: ['airflow', 'tasks', 'run', 'dag_dbt_anp', 'trigger_setup_infra', 'manual__2026-09-11T10:26:12.653584+00:00', '--job-id', '517', '--raw', '--subdir', 'DAGS_FOLDER/dag_dbt_anp.py', '--cfg-path', '/tmp/tmpzp51wi57']
+[2026-09-11T10:26:14.353+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/task/task_runner/standard_task_runner.py:61 DeprecationWarning: This process (pid=511) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2026-09-11T10:26:14.354+0000] {standard_task_runner.py:91} INFO - Job 517: Subtask trigger_setup_infra
+[2026-09-11T10:26:14.354+0000] {standard_task_runner.py:63} INFO - Started process 512 to run task
+[2026-09-11T10:26:14.616+0000] {task_command.py:426} INFO - Running <TaskInstance: dag_dbt_anp.trigger_setup_infra manual__2026-09-11T10:26:12.653584+00:00 [running]> on host 43d133c4f171
+[2026-09-11T10:26:15.068+0000] {taskinstance.py:2644} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='***' AIRFLOW_CTX_DAG_ID='dag_dbt_anp' AIRFLOW_CTX_TASK_ID='trigger_setup_infra' AIRFLOW_CTX_EXECUTION_DATE='2026-09-11T10:26:12.653584+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-09-11T10:26:12.653584+00:00'
+[2026-09-11T10:26:15.070+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-09-11T10:26:15.861+0000] {trigger_dagrun.py:210} INFO - Waiting for dag_setup_infrastructure on 2026-09-11 10:26:15.328410+00:00 to become allowed state ['success'] ...
+[2026-09-11T10:26:25.947+0000] {trigger_dagrun.py:210} INFO - Waiting for dag_setup_infrastructure on 2026-09-11 10:26:15.328410+00:00 to become allowed state ['success'] ...
+[2026-09-11T10:26:36.168+0000] {trigger_dagrun.py:223} INFO - dag_setup_infrastructure finished with allowed state success
+[2026-09-11T10:26:36.169+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-09-11T10:26:36.272+0000] {taskinstance.py:1205} INFO - Marking task as SUCCESS. dag_id=dag_dbt_anp, task_id=trigger_setup_infra, execution_date=20260911T102612, start_date=20260911T102614, end_date=20260911T102636
+[2026-09-11T10:26:36.343+0000] {local_task_job_runner.py:240} INFO - Task exited with return code 0
+[2026-09-11T10:26:36.484+0000] {taskinstance.py:3482} INFO - 2 downstream tasks scheduled from follow-on schedule check
+[2026-09-11T10:26:36.488+0000] {local_task_job_runner.py:222} INFO - ::endgroup::

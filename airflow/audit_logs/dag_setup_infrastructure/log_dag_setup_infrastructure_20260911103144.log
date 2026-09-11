@@ -1,0 +1,287 @@
+================================================================================
+ AUDIT TRAIL LOG - DAG: dag_setup_infrastructure
+ EXECUTION RUN ID: manual__2026-09-11T10:31:44.743972+00:00
+ GENERATED AT: 2026-09-11 10:31:56
+================================================================================
+
+
+################################################################################
+--- TASK EXECUTION: create_bronze_tables ---
+################################################################################
+
+[2026-09-11T10:31:53.969+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-09-11T10:31:54.072+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: dag_setup_infrastructure.create_bronze_tables manual__2026-09-11T10:31:44.743972+00:00 [queued]>
+[2026-09-11T10:31:54.088+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: dag_setup_infrastructure.create_bronze_tables manual__2026-09-11T10:31:44.743972+00:00 [queued]>
+[2026-09-11T10:31:54.094+0000] {taskinstance.py:2303} INFO - Starting attempt 1 of 2
+[2026-09-11T10:31:54.118+0000] {taskinstance.py:2327} INFO - Executing <Task(PostgresOperator): create_bronze_tables> on 2026-09-11 10:31:44.743972+00:00
+[2026-09-11T10:31:54.129+0000] {standard_task_runner.py:90} INFO - Running: ['airflow', 'tasks', 'run', 'dag_setup_infrastructure', 'create_bronze_tables', 'manual__2026-09-11T10:31:44.743972+00:00', '--job-id', '531', '--raw', '--subdir', 'DAGS_FOLDER/dag_setup_lab.py', '--cfg-path', '/tmp/tmpb4mg50hn']
+[2026-09-11T10:31:54.132+0000] {standard_task_runner.py:91} INFO - Job 531: Subtask create_bronze_tables
+[2026-09-11T10:31:54.134+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/task/task_runner/standard_task_runner.py:61 DeprecationWarning: This process (pid=749) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2026-09-11T10:31:54.135+0000] {standard_task_runner.py:63} INFO - Started process 750 to run task
+[2026-09-11T10:31:54.389+0000] {task_command.py:426} INFO - Running <TaskInstance: dag_setup_infrastructure.create_bronze_tables manual__2026-09-11T10:31:44.743972+00:00 [running]> on host 43d133c4f171
+[2026-09-11T10:31:54.893+0000] {taskinstance.py:2644} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='***' AIRFLOW_CTX_DAG_ID='dag_setup_infrastructure' AIRFLOW_CTX_TASK_ID='create_bronze_tables' AIRFLOW_CTX_EXECUTION_DATE='2026-09-11T10:31:44.743972+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-09-11T10:31:44.743972+00:00'
+[2026-09-11T10:31:54.895+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-09-11T10:31:54.916+0000] {sql.py:276} INFO - Executing: 
+            CREATE TABLE IF NOT EXISTS bronze.anp_landing_mensal (
+                regiao_sigla text NULL,
+                estado_sigla text NULL,
+                municipio text NULL,
+                revenda text NULL,
+                cnpj_da_revenda text NULL,
+                nome_da_rua text NULL,
+                numero_rua text NULL,
+                complemento text NULL,
+                bairro text NULL,
+                cep text NULL,
+                produto text NULL,
+                data_da_coleta text NULL,
+                valor_de_venda text NULL,
+                valor_de_compra text NULL,
+                unidade_de_medida text NULL,
+                bandeira text NULL,
+                arquivo text NULL,
+                ingestion_timestamp timestamp NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS bronze.anp_landing_semanal (
+                regiao_sigla text NULL,
+                estado_sigla text NULL,
+                municipio text NULL,
+                revenda text NULL,
+                cnpj_da_revenda text NULL,
+                nome_da_rua text NULL,
+                numero_rua text NULL,
+                complemento text NULL,
+                bairro text NULL,
+                cep text NULL,
+                produto text NULL,
+                data_da_coleta text NULL,
+                valor_de_venda text NULL,
+                valor_de_compra text NULL,
+                unidade_de_medida text NULL,
+                bandeira text NULL,
+                arquivo text NULL,
+                ingestion_timestamp timestamp NULL
+            );
+        
+[2026-09-11T10:31:54.917+0000] {crypto.py:82} WARNING - empty cryptography key - values will not be stored encrypted.
+[2026-09-11T10:31:54.918+0000] {base.py:84} INFO - Using connection ID 'postgres_default' for task execution.
+[2026-09-11T10:31:55.109+0000] {base.py:84} INFO - Using connection ID 'postgres_default' for task execution.
+[2026-09-11T10:31:55.170+0000] {sql.py:457} INFO - Running statement: 
+            CREATE TABLE IF NOT EXISTS bronze.anp_landing_mensal (
+                regiao_sigla text NULL,
+                estado_sigla text NULL,
+                municipio text NULL,
+                revenda text NULL,
+                cnpj_da_revenda text NULL,
+                nome_da_rua text NULL,
+                numero_rua text NULL,
+                complemento text NULL,
+                bairro text NULL,
+                cep text NULL,
+                produto text NULL,
+                data_da_coleta text NULL,
+                valor_de_venda text NULL,
+                valor_de_compra text NULL,
+                unidade_de_medida text NULL,
+                bandeira text NULL,
+                arquivo text NULL,
+                ingestion_timestamp timestamp NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS bronze.anp_landing_semanal (
+                regiao_sigla text NULL,
+                estado_sigla text NULL,
+                municipio text NULL,
+                revenda text NULL,
+                cnpj_da_revenda text NULL,
+                nome_da_rua text NULL,
+                numero_rua text NULL,
+                complemento text NULL,
+                bairro text NULL,
+                cep text NULL,
+                produto text NULL,
+                data_da_coleta text NULL,
+                valor_de_venda text NULL,
+                valor_de_compra text NULL,
+                unidade_de_medida text NULL,
+                bandeira text NULL,
+                arquivo text NULL,
+                ingestion_timestamp timestamp NULL
+            );
+        , parameters: None
+[2026-09-11T10:31:55.177+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/providers/common/sql/hooks/sql.py:407 AirflowProviderDeprecationWarning: Call to deprecated method _make_common_data_structure. (The `_make_serializable` method is deprecated and support will be removed in a future version of the common.sql provider. Please update the DbApiHook's provider to a version based on common.sql >= 1.9.1.)
+[2026-09-11T10:31:55.178+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-09-11T10:31:55.272+0000] {taskinstance.py:1205} INFO - Marking task as SUCCESS. dag_id=dag_setup_infrastructure, task_id=create_bronze_tables, execution_date=20260911T103144, start_date=20260911T103154, end_date=20260911T103155
+[2026-09-11T10:31:55.354+0000] {local_task_job_runner.py:240} INFO - Task exited with return code 0
+[2026-09-11T10:31:55.451+0000] {taskinstance.py:3482} INFO - 0 downstream tasks scheduled from follow-on schedule check
+[2026-09-11T10:31:55.460+0000] {local_task_job_runner.py:222} INFO - ::endgroup::
+
+################################################################################
+--- TASK EXECUTION: create_buckets ---
+################################################################################
+
+[2026-09-11T10:31:46.486+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-09-11T10:31:46.588+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: dag_setup_infrastructure.create_buckets manual__2026-09-11T10:31:44.743972+00:00 [queued]>
+[2026-09-11T10:31:46.603+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: dag_setup_infrastructure.create_buckets manual__2026-09-11T10:31:44.743972+00:00 [queued]>
+[2026-09-11T10:31:46.605+0000] {taskinstance.py:2303} INFO - Starting attempt 1 of 2
+[2026-09-11T10:31:46.625+0000] {taskinstance.py:2327} INFO - Executing <Task(PythonOperator): create_buckets> on 2026-09-11 10:31:44.743972+00:00
+[2026-09-11T10:31:46.640+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/task/task_runner/standard_task_runner.py:61 DeprecationWarning: This process (pid=743) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2026-09-11T10:31:46.637+0000] {standard_task_runner.py:90} INFO - Running: ['airflow', 'tasks', 'run', 'dag_setup_infrastructure', 'create_buckets', 'manual__2026-09-11T10:31:44.743972+00:00', '--job-id', '528', '--raw', '--subdir', 'DAGS_FOLDER/dag_setup_lab.py', '--cfg-path', '/tmp/tmpx37desjx']
+[2026-09-11T10:31:46.641+0000] {standard_task_runner.py:63} INFO - Started process 744 to run task
+[2026-09-11T10:31:46.641+0000] {standard_task_runner.py:91} INFO - Job 528: Subtask create_buckets
+[2026-09-11T10:31:46.962+0000] {task_command.py:426} INFO - Running <TaskInstance: dag_setup_infrastructure.create_buckets manual__2026-09-11T10:31:44.743972+00:00 [running]> on host 43d133c4f171
+[2026-09-11T10:31:47.374+0000] {taskinstance.py:2644} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='***' AIRFLOW_CTX_DAG_ID='dag_setup_infrastructure' AIRFLOW_CTX_TASK_ID='create_buckets' AIRFLOW_CTX_EXECUTION_DATE='2026-09-11T10:31:44.743972+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-09-11T10:31:44.743972+00:00'
+[2026-09-11T10:31:47.375+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-09-11T10:31:47.767+0000] {s3_client.py:44} INFO - bucket ok [landing]
+[2026-09-11T10:31:47.772+0000] {s3_client.py:44} INFO - bucket ok [bronze]
+[2026-09-11T10:31:47.776+0000] {s3_client.py:44} INFO - bucket ok [silver]
+[2026-09-11T10:31:47.780+0000] {s3_client.py:44} INFO - bucket ok [gold]
+[2026-09-11T10:31:47.786+0000] {s3_client.py:44} INFO - bucket ok [audit]
+[2026-09-11T10:31:47.787+0000] {python.py:237} INFO - Done. Returned value was: None
+[2026-09-11T10:31:47.788+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-09-11T10:31:47.873+0000] {taskinstance.py:1205} INFO - Marking task as SUCCESS. dag_id=dag_setup_infrastructure, task_id=create_buckets, execution_date=20260911T103144, start_date=20260911T103146, end_date=20260911T103147
+[2026-09-11T10:31:47.941+0000] {local_task_job_runner.py:240} INFO - Task exited with return code 0
+[2026-09-11T10:31:48.017+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/models/baseoperator.py:1296 AirflowProviderDeprecationWarning: Call to deprecated class PostgresOperator. (Please use `airflow.providers.common.sql.operators.sql.SQLExecuteQueryOperator`.Also, you can provide `hook_params={'schema': <database>}`.)
+[2026-09-11T10:31:48.046+0000] {taskinstance.py:3482} INFO - 1 downstream tasks scheduled from follow-on schedule check
+[2026-09-11T10:31:48.052+0000] {local_task_job_runner.py:222} INFO - ::endgroup::
+
+################################################################################
+--- TASK EXECUTION: create_ctrl_tables ---
+################################################################################
+
+[2026-09-11T10:31:51.864+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-09-11T10:31:51.975+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: dag_setup_infrastructure.create_ctrl_tables manual__2026-09-11T10:31:44.743972+00:00 [queued]>
+[2026-09-11T10:31:51.989+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: dag_setup_infrastructure.create_ctrl_tables manual__2026-09-11T10:31:44.743972+00:00 [queued]>
+[2026-09-11T10:31:51.993+0000] {taskinstance.py:2303} INFO - Starting attempt 1 of 2
+[2026-09-11T10:31:52.017+0000] {taskinstance.py:2327} INFO - Executing <Task(PostgresOperator): create_ctrl_tables> on 2026-09-11 10:31:44.743972+00:00
+[2026-09-11T10:31:52.028+0000] {standard_task_runner.py:90} INFO - Running: ['airflow', 'tasks', 'run', 'dag_setup_infrastructure', 'create_ctrl_tables', 'manual__2026-09-11T10:31:44.743972+00:00', '--job-id', '530', '--raw', '--subdir', 'DAGS_FOLDER/dag_setup_lab.py', '--cfg-path', '/tmp/tmpsq10ddwx']
+[2026-09-11T10:31:52.033+0000] {standard_task_runner.py:91} INFO - Job 530: Subtask create_ctrl_tables
+[2026-09-11T10:31:52.032+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/task/task_runner/standard_task_runner.py:61 DeprecationWarning: This process (pid=747) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2026-09-11T10:31:52.034+0000] {standard_task_runner.py:63} INFO - Started process 748 to run task
+[2026-09-11T10:31:52.327+0000] {task_command.py:426} INFO - Running <TaskInstance: dag_setup_infrastructure.create_ctrl_tables manual__2026-09-11T10:31:44.743972+00:00 [running]> on host 43d133c4f171
+[2026-09-11T10:31:52.779+0000] {taskinstance.py:2644} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='***' AIRFLOW_CTX_DAG_ID='dag_setup_infrastructure' AIRFLOW_CTX_TASK_ID='create_ctrl_tables' AIRFLOW_CTX_EXECUTION_DATE='2026-09-11T10:31:44.743972+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-09-11T10:31:44.743972+00:00'
+[2026-09-11T10:31:52.781+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-09-11T10:31:52.799+0000] {sql.py:276} INFO - Executing: 
+            CREATE TABLE IF NOT EXISTS ctrl.anp_metadata_mensal (
+                cat varchar(20) NOT NULL,
+                "ref" varchar(6) NOT NULL,
+                "month" int4 NOT NULL,
+                "year" int4 NOT NULL,
+                file_name varchar(255) NOT NULL,
+                url_source text NOT NULL,
+                download_date timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+                link_name varchar(30) NULL,
+                CONSTRAINT pk_control_anp PRIMARY KEY (cat, ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS ctrl.anp_metadata_semanal (
+                data_ref date NULL,
+                data_dag_run timestamp NULL,
+                status varchar NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS audit.dbt_runs (
+                run_timestamp timestamp NULL,
+                invocation_id text NOT NULL,
+                node_id text NOT NULL,
+                status text NULL,
+                execution_time_sec float8 NULL,
+                failures int4 NULL,
+                message text NULL,
+                resource_type text NULL,
+                "database" text NULL,
+                schema_layer text NULL,
+                "materialized" text NULL,
+                tags text NULL,
+                data_carga timestamp NULL,
+                CONSTRAINT dbt_runs_pkey PRIMARY KEY (invocation_id, node_id)
+            );
+        
+[2026-09-11T10:31:52.800+0000] {crypto.py:82} WARNING - empty cryptography key - values will not be stored encrypted.
+[2026-09-11T10:31:52.801+0000] {base.py:84} INFO - Using connection ID 'postgres_default' for task execution.
+[2026-09-11T10:31:53.016+0000] {base.py:84} INFO - Using connection ID 'postgres_default' for task execution.
+[2026-09-11T10:31:53.074+0000] {sql.py:457} INFO - Running statement: 
+            CREATE TABLE IF NOT EXISTS ctrl.anp_metadata_mensal (
+                cat varchar(20) NOT NULL,
+                "ref" varchar(6) NOT NULL,
+                "month" int4 NOT NULL,
+                "year" int4 NOT NULL,
+                file_name varchar(255) NOT NULL,
+                url_source text NOT NULL,
+                download_date timestamp DEFAULT CURRENT_TIMESTAMP NULL,
+                link_name varchar(30) NULL,
+                CONSTRAINT pk_control_anp PRIMARY KEY (cat, ref)
+            );
+
+            CREATE TABLE IF NOT EXISTS ctrl.anp_metadata_semanal (
+                data_ref date NULL,
+                data_dag_run timestamp NULL,
+                status varchar NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS audit.dbt_runs (
+                run_timestamp timestamp NULL,
+                invocation_id text NOT NULL,
+                node_id text NOT NULL,
+                status text NULL,
+                execution_time_sec float8 NULL,
+                failures int4 NULL,
+                message text NULL,
+                resource_type text NULL,
+                "database" text NULL,
+                schema_layer text NULL,
+                "materialized" text NULL,
+                tags text NULL,
+                data_carga timestamp NULL,
+                CONSTRAINT dbt_runs_pkey PRIMARY KEY (invocation_id, node_id)
+            );
+        , parameters: None
+[2026-09-11T10:31:53.079+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/providers/common/sql/hooks/sql.py:407 AirflowProviderDeprecationWarning: Call to deprecated method _make_common_data_structure. (The `_make_serializable` method is deprecated and support will be removed in a future version of the common.sql provider. Please update the DbApiHook's provider to a version based on common.sql >= 1.9.1.)
+[2026-09-11T10:31:53.080+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-09-11T10:31:53.157+0000] {taskinstance.py:1205} INFO - Marking task as SUCCESS. dag_id=dag_setup_infrastructure, task_id=create_ctrl_tables, execution_date=20260911T103144, start_date=20260911T103151, end_date=20260911T103153
+[2026-09-11T10:31:53.212+0000] {local_task_job_runner.py:240} INFO - Task exited with return code 0
+[2026-09-11T10:31:53.316+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/models/baseoperator.py:1296 AirflowProviderDeprecationWarning: Call to deprecated class PostgresOperator. (Please use `airflow.providers.common.sql.operators.sql.SQLExecuteQueryOperator`.Also, you can provide `hook_params={'schema': <database>}`.)
+[2026-09-11T10:31:53.340+0000] {taskinstance.py:3482} INFO - 0 downstream tasks scheduled from follow-on schedule check
+[2026-09-11T10:31:53.365+0000] {local_task_job_runner.py:222} INFO - ::endgroup::
+
+################################################################################
+--- TASK EXECUTION: create_schemas ---
+################################################################################
+
+[2026-09-11T10:31:49.404+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2026-09-11T10:31:49.509+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: dag_setup_infrastructure.create_schemas manual__2026-09-11T10:31:44.743972+00:00 [queued]>
+[2026-09-11T10:31:49.523+0000] {taskinstance.py:2073} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: dag_setup_infrastructure.create_schemas manual__2026-09-11T10:31:44.743972+00:00 [queued]>
+[2026-09-11T10:31:49.540+0000] {taskinstance.py:2303} INFO - Starting attempt 1 of 2
+[2026-09-11T10:31:49.561+0000] {taskinstance.py:2327} INFO - Executing <Task(PostgresOperator): create_schemas> on 2026-09-11 10:31:44.743972+00:00
+[2026-09-11T10:31:49.573+0000] {standard_task_runner.py:90} INFO - Running: ['airflow', 'tasks', 'run', 'dag_setup_infrastructure', 'create_schemas', 'manual__2026-09-11T10:31:44.743972+00:00', '--job-id', '529', '--raw', '--subdir', 'DAGS_FOLDER/dag_setup_lab.py', '--cfg-path', '/tmp/tmpb3omh1ug']
+[2026-09-11T10:31:49.579+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/task/task_runner/standard_task_runner.py:61 DeprecationWarning: This process (pid=745) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2026-09-11T10:31:49.580+0000] {standard_task_runner.py:91} INFO - Job 529: Subtask create_schemas
+[2026-09-11T10:31:49.580+0000] {standard_task_runner.py:63} INFO - Started process 746 to run task
+[2026-09-11T10:31:49.854+0000] {task_command.py:426} INFO - Running <TaskInstance: dag_setup_infrastructure.create_schemas manual__2026-09-11T10:31:44.743972+00:00 [running]> on host 43d133c4f171
+[2026-09-11T10:31:50.291+0000] {taskinstance.py:2644} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='***' AIRFLOW_CTX_DAG_ID='dag_setup_infrastructure' AIRFLOW_CTX_TASK_ID='create_schemas' AIRFLOW_CTX_EXECUTION_DATE='2026-09-11T10:31:44.743972+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-09-11T10:31:44.743972+00:00'
+[2026-09-11T10:31:50.293+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2026-09-11T10:31:50.313+0000] {sql.py:276} INFO - Executing: 
+            CREATE SCHEMA IF NOT EXISTS ctrl;
+            CREATE SCHEMA IF NOT EXISTS audit;
+            CREATE SCHEMA IF NOT EXISTS bronze;
+            CREATE SCHEMA IF NOT EXISTS silver;
+            CREATE SCHEMA IF NOT EXISTS gold;
+        
+[2026-09-11T10:31:50.314+0000] {crypto.py:82} WARNING - empty cryptography key - values will not be stored encrypted.
+[2026-09-11T10:31:50.315+0000] {base.py:84} INFO - Using connection ID 'postgres_default' for task execution.
+[2026-09-11T10:31:50.518+0000] {base.py:84} INFO - Using connection ID 'postgres_default' for task execution.
+[2026-09-11T10:31:50.571+0000] {sql.py:457} INFO - Running statement: 
+            CREATE SCHEMA IF NOT EXISTS ctrl;
+            CREATE SCHEMA IF NOT EXISTS audit;
+            CREATE SCHEMA IF NOT EXISTS bronze;
+            CREATE SCHEMA IF NOT EXISTS silver;
+            CREATE SCHEMA IF NOT EXISTS gold;
+        , parameters: None
+[2026-09-11T10:31:50.576+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/providers/common/sql/hooks/sql.py:407 AirflowProviderDeprecationWarning: Call to deprecated method _make_common_data_structure. (The `_make_serializable` method is deprecated and support will be removed in a future version of the common.sql provider. Please update the DbApiHook's provider to a version based on common.sql >= 1.9.1.)
+[2026-09-11T10:31:50.577+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2026-09-11T10:31:50.651+0000] {taskinstance.py:1205} INFO - Marking task as SUCCESS. dag_id=dag_setup_infrastructure, task_id=create_schemas, execution_date=20260911T103144, start_date=20260911T103149, end_date=20260911T103150
+[2026-09-11T10:31:50.718+0000] {local_task_job_runner.py:240} INFO - Task exited with return code 0
+[2026-09-11T10:31:50.840+0000] {logging_mixin.py:188} WARNING - /home/airflow/.local/lib/python3.12/site-packages/airflow/models/baseoperator.py:1296 AirflowProviderDeprecationWarning: Call to deprecated class PostgresOperator. (Please use `airflow.providers.common.sql.operators.sql.SQLExecuteQueryOperator`.Also, you can provide `hook_params={'schema': <database>}`.)
+[2026-09-11T10:31:50.867+0000] {taskinstance.py:3482} INFO - 1 downstream tasks scheduled from follow-on schedule check
+[2026-09-11T10:31:50.871+0000] {local_task_job_runner.py:222} INFO - ::endgroup::

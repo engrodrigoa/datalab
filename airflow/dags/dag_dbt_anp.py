@@ -135,6 +135,17 @@ with DAG(
     # ==========================================
     # 4. ELEMENTARY: SETUP + GERAÇÃO DE RELATÓRIO
     # ==========================================
+    
+    run_dbt_deps = BashOperator(
+            task_id="run_dbt_deps",
+            bash_command=(
+                f"{DBT_EXECUTABLE_PATH} deps "
+                f"--project-dir {DBT_PROJECT_DIR} --profiles-dir {DBT_PROJECT_DIR}"
+            ),
+            execution_timeout=timedelta(minutes=5),
+            trigger_rule=TriggerRule.ALL_DONE,
+        )
+    
     run_elementary_models = BashOperator(
         task_id="run_elementary_models",
         bash_command=(
@@ -142,8 +153,7 @@ with DAG(
             f"--project-dir {DBT_PROJECT_DIR} --profiles-dir {DBT_PROJECT_DIR} "
             f"--profile datalab --target dev"
         ),
-        execution_timeout=timedelta(minutes=10),
-        trigger_rule=TriggerRule.ALL_DONE,
+        execution_timeout=timedelta(minutes=10)
     )
 
     generate_elementary_report = BashOperator(
@@ -151,6 +161,8 @@ with DAG(
         bash_command=f"DBT_PACKAGES_DIR=/tmp {EDR_EXECUTABLE_PATH} report --project-dir {DBT_PROJECT_DIR} --profiles-dir {DBT_PROJECT_DIR}",
         execution_timeout=timedelta(minutes=10),
     )
+
+    
 
     # ==========================================
     # 5. EXPORTAÇÃO DE LOGS DE AUDITORIA
@@ -175,6 +187,7 @@ with DAG(
     (
         join_landing
         >> dbt_transformations
+        >> run_dbt_deps
         >> run_elementary_models
         >> generate_elementary_report
         >> export_dbt_logs
