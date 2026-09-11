@@ -5,8 +5,8 @@
     "name": "admbvlc",
     "namespace": "default",
     "uid": "2cd010bb-d41d-404b-96e2-11c8569da90f",
-    "resourceVersion": "1789138226942999",
-    "generation": 11,
+    "resourceVersion": "1789154806725007",
+    "generation": 19,
     "creationTimestamp": "2026-09-11T12:42:02Z",
     "labels": {
       "grafana.app/deprecatedInternalID": "4217746799738880"
@@ -15,7 +15,7 @@
       "grafana.app/createdBy": "user:ffxxcqv4tips0c",
       "grafana.app/saved-from-ui": "Grafana v13.2.1 (56cd3e9288)",
       "grafana.app/updatedBy": "user:ffxxcqv4tips0c",
-      "grafana.app/updatedTimestamp": "2026-09-11T14:50:26Z"
+      "grafana.app/updatedTimestamp": "2026-09-11T19:26:46Z"
     }
   },
   "spec": {
@@ -67,7 +67,7 @@
                       "spec": {
                         "direction": "backward",
                         "editorMode": "code",
-                        "expr": "{job=\"airflow\"} | filename =~ \".*/dag_id=$dag_id/.*\" | filename =~ \".*/task_id=$task_id/.*\"",
+                        "expr": "{job=\"airflow\"} | filename =~ \".*dag_id=($dag_id)/.*\" | filename =~ \".*task_id=($task_id)/.*\" | regexp \"\\\\[(?P<level>INFO|ERROR|WARN|DEBUG)\\\\]\" | line_format \"[{{regexReplaceAll \\\".*dag_id=([^/]+).*\\\" .filename \\\"$1\\\"}}/{{regexReplaceAll \\\".*task_id=([^/]+).*\\\" .filename \\\"$1\\\"}}] {{__line__}}\" | level =~ \"$level\"",
                         "queryType": "range"
                       }
                     },
@@ -219,7 +219,7 @@
               "type": 1
             }
           },
-          "regex": "/task_id=([^/]+)\\/.*/",
+          "regex": ".*dag_id=$dag_id/.*task_id=([^/]+)/.*",
           "regexApplyTo": "value",
           "sort": "disabled",
           "definition": "",
@@ -227,6 +227,25 @@
           "multi": false,
           "includeAll": true,
           "allowCustomValue": true
+        }
+      },
+      {
+        "kind": "CustomVariable",
+        "spec": {
+          "name": "level",
+          "query": "INFO, WARN, ERROR, DEBUG, NOTSET",
+          "current": {
+            "text": "INFO",
+            "value": "INFO"
+          },
+          "options": [],
+          "multi": false,
+          "includeAll": true,
+          "label": "level",
+          "hide": "dontHide",
+          "skipUrlSync": false,
+          "allowCustomValue": true,
+          "valuesFormat": "csv"
         }
       }
     ],
