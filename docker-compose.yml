@@ -125,3 +125,45 @@ services:
     ports:
       - "8081:8080"
     restart: always
+
+#STACK OBSERVABILITY
+# LOG AGGREGATION: LOKI
+  loki:
+    image: grafana/loki:2.9.2
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+
+  # LOG SHIPPER: PROMTAIL
+  promtail:
+    image: grafana/promtail:2.9.2
+    container_name: promtail
+    volumes:
+      - ./airflow/logs:/opt/airflow/logs:ro
+      - ./promtail-config.yaml:/etc/promtail/promtail-config.yaml:ro
+    command: -config.file=/etc/promtail/promtail-config.yaml
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  # OBSERVABILITY UI: GRAFANA
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./datalake/grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - loki
+      - postgres
+    restart: unless-stopped
+
+    

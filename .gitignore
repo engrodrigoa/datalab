@@ -1,5 +1,7 @@
 datalake/
 airflow/logs/
+airflow/audit_logs/*
+!airflow/audit_logs/.gitkeep
 datasource/
 __pycache__/
 *.pyc

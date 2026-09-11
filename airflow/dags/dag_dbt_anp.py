@@ -122,7 +122,9 @@ with DAG(
             dbt_executable_path=DBT_EXECUTABLE_PATH
         ),
         render_config=RenderConfig(exclude=["package:elementary"]),
+        operator_args={"emit_datasets": False},
     )
+    
 
     # ==========================================
     # 3. CONVERGÊNCIA DAS CARGAS LANDING
@@ -135,7 +137,7 @@ with DAG(
     # ==========================================
     # 4. ELEMENTARY: SETUP + GERAÇÃO DE RELATÓRIO
     # ==========================================
-    
+
     run_dbt_deps = BashOperator(
             task_id="run_dbt_deps",
             bash_command=(
