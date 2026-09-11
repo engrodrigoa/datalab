@@ -1,13 +1,14 @@
-import os
-import re
+import os, sys
 from datetime import datetime, timedelta
-from glob import glob
 
 from airflow import DAG
 from airflow.operators.bash import BashOperator  # type: ignore
 from airflow.operators.empty import EmptyOperator  # type: ignore
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator  # type: ignore
 from airflow.utils.trigger_rule import TriggerRule  # type: ignore
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from pipelines.commons.audit_logger import consolidate_dag_audit_logs
 
 # Importações do Astronomer Cosmos
 from cosmos import (  # type: ignore
@@ -22,73 +23,6 @@ from cosmos import (  # type: ignore
 DBT_PROJECT_DIR = "/opt/airflow/pipelines/dbt_projects"
 DBT_EXECUTABLE_PATH = "/opt/airflow/dbt_venv/bin/dbt"
 EDR_EXECUTABLE_PATH = "/opt/airflow/dbt_venv/bin/edr"
-
-# Configurações de Auditoria de Logs da DAG
-AUDIT_LOG_DIR = "/opt/airflow/audit_logs/anp"
-AIRFLOW_LOG_DIR = os.getenv("AIRFLOW__LOGGING__BASE_LOG_FOLDER", "/opt/airflow/logs")
-
-
-def consolidate_dag_audit_logs(context):
-
-    dag_id = context["dag"].dag_id
-    run_id = context["run_id"]
-
-    # Formata a data/hora para o padrão log_anp20260910180000.log
-    logical_date = context.get("logical_date") or context.get("execution_date")
-    execution_ts = logical_date.strftime("%Y%m%d%H%M%S")
-    audit_filename = f"log_anp_{execution_ts}.log"
-
-    os.makedirs(AUDIT_LOG_DIR, exist_ok=True)
-    target_audit_path = os.path.join(AUDIT_LOG_DIR, audit_filename)
-
-    # Localiza todos os logs gerados na pasta desta DAG
-    dag_log_path = os.path.join(AIRFLOW_LOG_DIR, f"dag_id={dag_id}")
-    all_logs = glob(os.path.join(dag_log_path, "**", "*.log"), recursive=True)
-
-    # Filtra logs específicos do run_id/timestamp atual
-    ts_nodash = context.get("ts_nodash", "")
-    run_logs = sorted(
-        [
-            f
-            for f in all_logs
-            if run_id in f or (ts_nodash and ts_nodash in f)
-        ]
-    )
-
-    with open(target_audit_path, "w", encoding="utf-8") as audit_file:
-        audit_file.write("=" * 80 + "\n")
-        audit_file.write(f" AUDIT TRAIL LOG - DAG: {dag_id}\n")
-        audit_file.write(f" EXECUTION RUN ID: {run_id}\n")
-        audit_file.write(
-            f" GENERATED AT: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-        )
-        audit_file.write("=" * 80 + "\n\n")
-
-        if not run_logs:
-            audit_file.write(
-                "[WARN] Nenhum arquivo de log individual foi encontrado para esta execução.\n"
-            )
-
-        for log_path in run_logs:
-            task_match = re.search(r"task_id=([^/]+)", log_path)
-            task_id = task_match.group(1) if task_match else "UNKNOWN_TASK"
-
-            audit_file.write("\n" + "#" * 80 + "\n")
-            audit_file.write(f"--- TASK EXECUTION: {task_id} ---\n")
-            audit_file.write("#" * 80 + "\n\n")
-
-            try:
-                with open(log_path, "r", encoding="utf-8") as f:
-                    audit_file.write(f.read())
-            except Exception as e:
-                audit_file.write(
-                    f"[ERROR] Falha ao ler log da task {task_id}: {e}\n"
-                )
-
-    print(
-        f"[AUDIT_MANAGER] Arquivo consolidado salvo em: {target_audit_path}"
-    )
-
 
 # dbt/cosmos
 profile_config = ProfileConfig(

@@ -27,6 +27,7 @@ MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT_INTERNAL") if is_docker else os.geten
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
 BUCKET_DATASOURCE = os.getenv("MINIO_BUCKET_AUDIT", "audit")
+BUCKET_AUDIT = os.getenv("MINIO_BUCKET_AUDIT", "audit")
 
 REQUIRED_BUCKETS = [
     os.getenv("MINIO_BUCKET_LANDING", "landing"),

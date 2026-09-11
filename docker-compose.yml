@@ -48,16 +48,22 @@ services:
       AIRFLOW__COSMOS__USE_DATASET_AIRFLOW3_URI_STANDARD: '1'
       OPENLINEAGE_DISABLED: 'true'
       DBT_PG_HOST: postgres
+      MINIO_ENDPOINT: "http://minio:9000"
+      MINIO_ACCESS_KEY: "datalabs"
+      MINIO_SECRET_KEY: "datalabs"
+      MINIO_AUDIT_BUCKET: "audit"
+      PYTHONPATH: "/opt/airflow"
     ports:
       - "8080:8080"
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/audit_logs:/opt/airflow/audit_logs
       - ./datasource:/mnt/datasource
       - ./pipelines:/opt/airflow/pipelines
       - ./.env:/opt/airflow/.env:ro
-      - ./audit_logs:/opt/airflow/audit_logs 
+      
       
     env_file:
       - .env
@@ -80,14 +86,19 @@ services:
       AIRFLOW__COSMOS__USE_DATASET_AIRFLOW3_URI_STANDARD: '1'
       OPENLINEAGE_DISABLED: 'true'
       DBT_PG_HOST: postgres
+      MINIO_ENDPOINT: "http://minio:9000"
+      MINIO_ACCESS_KEY: "datalabs"
+      MINIO_SECRET_KEY: "datalabs"
+      MINIO_AUDIT_BUCKET: "audit"
+      PYTHONPATH: "/opt/airflow"
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/audit_logs:/opt/airflow/audit_logs
       - ./datasource:/mnt/datasource
       - ./pipelines:/opt/airflow/pipelines
       - ./.env:/opt/airflow/.env:ro
-      - ./audit_logs:/opt/airflow/audit_logs 
     env_file:
       - .env
     command: scheduler

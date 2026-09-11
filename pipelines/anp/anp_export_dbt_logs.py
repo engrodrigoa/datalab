@@ -11,7 +11,7 @@ filterwarnings("ignore")
 # ==========================================
 # commons utils: env_loader
 # ==========================================
-filterwarnings("ignore")
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from pipelines.commons.env_loader import (
