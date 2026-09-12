@@ -29,6 +29,7 @@ with DAG(
     on_failure_callback=consolidate_dag_audit_logs,
 ) as dag:
 
+    start = EmptyOperator(task_id="start")
  
     trigger_infra_setup = TriggerDagRunOperator(
         task_id='trigger_infra_setup',
@@ -49,4 +50,37 @@ with DAG(
             execution_timeout=timedelta(minutes=260),
     )
 
-    trigger_infra_setup >> task_download_files >> task_extract_to_bronze
+    task_load_s3_silver_dims = BashOperator(
+                task_id="task_load_s3_silver_dims",
+                bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb03_s3_silver_dimensions.py",
+                execution_timeout=timedelta(minutes=260),
+        )
+
+    task_load_s3_silver_estabelecimentos = BashOperator(
+                    task_id="task_load_s3_silver_estabelecimentos",
+                    bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb04_s3_silver_estabelecimentos.py",
+                    execution_timeout=timedelta(minutes=260),
+            )
+
+    task_load_s3_silver_empresas = BashOperator(
+                        task_id="task_load_s3_silver_empresas",
+                        bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb05_s3_silver_empresas.py",
+                        execution_timeout=timedelta(minutes=260),
+                )
+    task_load_s3_silver_socios = BashOperator(
+                            task_id="task_load_s3_silver_socios",
+                            bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb06_s3_silver_socios.py",
+                            execution_timeout=timedelta(minutes=260),
+                    )
+
+
+
+
+    end = EmptyOperator(
+        task_id="end",
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+
+
+
+    start >> trigger_infra_setup >> task_download_files >> task_extract_to_bronze >> task_load_s3_silver_dims >> task_load_s3_silver_estabelecimentos >> task_load_s3_silver_empresas >> task_load_s3_silver_socios >> end

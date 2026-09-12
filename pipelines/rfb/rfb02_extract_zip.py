@@ -1,4 +1,3 @@
-
 import os
 import sys
 import zipfile
@@ -35,12 +34,38 @@ def process_zips_to_parquet():
         logger.error(f"Source directory does not exist: {SOURCE_DIR}")
         return
 
-    pending_files = sorted([f for f in os.listdir(SOURCE_DIR) if f.endswith('.zip')])
-    logger.info(f"Found {len(pending_files)} ZIP files for bronze ingestion.")
+    all_zip_files = sorted([f for f in os.listdir(SOURCE_DIR) if f.endswith('.zip')])
+    total_files = len(all_zip_files)
+    
+    if not total_files:
+        logger.info(f"No ZIP files found in {SOURCE_DIR} to process.")
+        return
+
+    pending_files = []
+    skipped_count = 0
+    
+    for zip_file in all_zip_files:
+        base_name = zip_file.replace('.zip', '')
+        s3_prefix = f"rfb/ref{REFERENCIA.replace('-', '')}/{base_name}.parquet"
+        
+        try:
+            s3_client.head_object(Bucket=BUCKET_BRONZE, Key=s3_prefix)
+            logger.info(f"Skipping {zip_file}: already exists in s3://{BUCKET_BRONZE}/{s3_prefix}")
+            skipped_count += 1
+        except Exception:
+            pending_files.append(zip_file)
+
+    if not pending_files:
+        logger.info(f"Pipeline execution completed. Total ZIPs: {total_files} | Already in S3: {skipped_count} | Processed this run: 0")
+        return
+
+    logger.info(f"Found {len(pending_files)} pending ZIP files for bronze ingestion out of {total_files} total ({skipped_count} already present).")
 
     N_COLUNAS = 30
     column_names = [f"f{i}" for i in range(N_COLUNAS)]
     base_schema = pa.schema([pa.field(col, pa.string()) for col in column_names] + [pa.field("referencia_mes", pa.string())])
+
+    processed_count = 0
 
     for zip_file in pending_files:
         zip_path = os.path.join(SOURCE_DIR, zip_file)
@@ -100,6 +125,8 @@ def process_zips_to_parquet():
             logger.info(f"Uploading to s3://{BUCKET_BRONZE}/{s3_prefix} ({row_count} rows)")
             s3_client.upload_file(local_parquet, BUCKET_BRONZE, s3_prefix)
             logger.info(f"Upload completed successfully for {base_name}")
+            
+            processed_count += 1
 
         except Exception as e:
             logger.error(f"Unrecoverable error processing {zip_file}: {e}")
@@ -109,6 +136,8 @@ def process_zips_to_parquet():
                 os.remove(extracted_file)
             if os.path.exists(local_parquet):
                 os.remove(local_parquet)
+
+    logger.info(f"Pipeline execution completed. Total ZIPs: {total_files} | Already in S3: {skipped_count} | Processed this run: {processed_count}")
 
 if __name__ == "__main__":
     process_zips_to_parquet()
