@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.bash import BashOperator  # type: ignore
+from airflow.operators.python import PythonOperator  # type: ignore
 from airflow.operators.empty import EmptyOperator  # type: ignore
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator  # type: ignore
 from airflow.utils.trigger_rule import TriggerRule  # type: ignore
@@ -69,9 +70,6 @@ with DAG(
         "cosmos",
         "elementary",
     ],
-    # REGISTRO DOS CALLBACKS DE AUDITORIA
-    on_success_callback=consolidate_dag_audit_logs,
-    on_failure_callback=consolidate_dag_audit_logs,
 ) as dag:
 
     # ==========================================
@@ -177,6 +175,15 @@ with DAG(
     )
 
     # ==========================================
+    # 6. CONSOLIDAÇÃO DO AUDIT TRAIL (mesmo padrão da dag_rfb)
+    # ==========================================
+    end = PythonOperator(
+        task_id="end",
+        python_callable=consolidate_dag_audit_logs,
+        trigger_rule=TriggerRule.ALL_DONE,
+    )
+
+    # ==========================================
     # DEFINIÇÃO DAS DEPENDÊNCIAS GERAIS
     # ==========================================
     t_setup_infra >> [t_scrap_semanal, t_scrap_mensal]
@@ -193,4 +200,5 @@ with DAG(
         >> run_elementary_models
         >> generate_elementary_report
         >> export_dbt_logs
+        >> end
     )

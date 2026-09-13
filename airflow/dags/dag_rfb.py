@@ -1,14 +1,20 @@
-import os, sys
+import os
+import sys
 from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.bash import BashOperator  # type: ignore
+from airflow.operators.python import PythonOperator  # type: ignore
 from airflow.operators.empty import EmptyOperator  # type: ignore
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator  # type: ignore
 from airflow.utils.trigger_rule import TriggerRule  # type: ignore
 
+##################################
+# COMMONS UTILS
+##################################
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from pipelines.commons.audit_logger import consolidate_dag_audit_logs
+##################################
 
 default_args = {
     'owner': 'datalab',
@@ -24,13 +30,11 @@ with DAG(
     schedule_interval=None,
     start_date=datetime(2026, 1, 1),
     catchup=False,
-    tags=['rfb', 'bronze', 's3', 'polars', 'parquet'],
-    on_success_callback=consolidate_dag_audit_logs,
-    on_failure_callback=consolidate_dag_audit_logs,
+    tags=['rfb', 'bronze', 's3', 'polars', 'parquet', 'grafana'],
 ) as dag:
 
     start = EmptyOperator(task_id="start")
- 
+
     trigger_infra_setup = TriggerDagRunOperator(
         task_id='trigger_infra_setup',
         trigger_dag_id='dag_setup_infrastructure',
@@ -39,48 +43,55 @@ with DAG(
     )
 
     task_download_files = BashOperator(
-            task_id="task_download_files",
-            bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb01_download_files.py",
-            execution_timeout=timedelta(minutes=260),
+        task_id="task_download_files",
+        bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb01_download_files.py",
+        execution_timeout=timedelta(minutes=260),
     )
 
     task_extract_to_bronze = BashOperator(
-            task_id="task_extract_to_bronze",
-            bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb02_extract_zip.py",
-            execution_timeout=timedelta(minutes=260),
+        task_id="task_extract_to_bronze",
+        bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb02_extract_zip.py",
+        execution_timeout=timedelta(minutes=260),
     )
 
     task_load_s3_silver_dims = BashOperator(
-                task_id="task_load_s3_silver_dims",
-                bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb03_s3_silver_dimensions.py",
-                execution_timeout=timedelta(minutes=260),
-        )
+        task_id="task_load_s3_silver_dims",
+        bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb03_s3_silver_dimensions.py",
+        execution_timeout=timedelta(minutes=260),
+    )
 
     task_load_s3_silver_estabelecimentos = BashOperator(
-                    task_id="task_load_s3_silver_estabelecimentos",
-                    bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb04_s3_silver_estabelecimentos.py",
-                    execution_timeout=timedelta(minutes=260),
-            )
+        task_id="task_load_s3_silver_estabelecimentos",
+        bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb04_s3_silver_estabelecimentos.py",
+        execution_timeout=timedelta(minutes=260),
+    )
 
     task_load_s3_silver_empresas = BashOperator(
-                        task_id="task_load_s3_silver_empresas",
-                        bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb05_s3_silver_empresas.py",
-                        execution_timeout=timedelta(minutes=260),
-                )
+        task_id="task_load_s3_silver_empresas",
+        bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb05_s3_silver_empresas.py",
+        execution_timeout=timedelta(minutes=260),
+    )
+
     task_load_s3_silver_socios = BashOperator(
-                            task_id="task_load_s3_silver_socios",
-                            bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb06_s3_silver_socios.py",
-                            execution_timeout=timedelta(minutes=260),
-                    )
+        task_id="task_load_s3_silver_socios",
+        bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb06_s3_silver_socios.py",
+        execution_timeout=timedelta(minutes=260),
+    )
 
-
-
-
-    end = EmptyOperator(
+    end = PythonOperator(
         task_id="end",
+        python_callable=consolidate_dag_audit_logs,
         trigger_rule=TriggerRule.ALL_DONE,
     )
 
-
-
-    start >> trigger_infra_setup >> task_download_files >> task_extract_to_bronze >> task_load_s3_silver_dims >> task_load_s3_silver_estabelecimentos >> task_load_s3_silver_empresas >> task_load_s3_silver_socios >> end
+    (
+        start
+        >> trigger_infra_setup
+        >> task_download_files
+        >> task_extract_to_bronze
+        >> task_load_s3_silver_dims
+        >> task_load_s3_silver_estabelecimentos
+        >> task_load_s3_silver_empresas
+        >> task_load_s3_silver_socios
+        >> end
+    )
