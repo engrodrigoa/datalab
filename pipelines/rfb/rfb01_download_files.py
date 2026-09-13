@@ -39,6 +39,15 @@ def download_rfb_files(share_token: str, ano_mes: str, base_dir: str):
 
     namespaces = {'d': 'DAV:'}
     root = ET.fromstring(response.content)
+
+    # namespaces = {'d': 'DAV:'}
+    
+    # try:
+    #     root = ET.fromstring(response.content)
+    # except ET.ParseError as e:
+    #     logger.error("Falha ao fazer o parse do XML. O servidor não retornou um WebDAV válido.")
+    #     logger.error(f"Conteúdo recebido : {response.text[:1000]}")
+    #     raise RuntimeError(f"ParseError: {e}")
     
     files_to_download = []
     for element in root.findall('d:response', namespaces):

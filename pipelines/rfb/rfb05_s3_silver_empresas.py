@@ -18,6 +18,7 @@ from pipelines.commons.env_loader import (
 )
 from pipelines.commons.s3_client import get_s3_client
 from pipelines.commons.logger import get_logger
+from pipelines.commons.rfb_silver_contract import adicionar_colunas_auditoria, validar_schema_basico
 
 logger = get_logger("rfb_silver_empresas")
 
@@ -45,6 +46,15 @@ MAPEAMENTO_COLUNAS = {
     "f5": "porte_empresa",
     "f6": "ente_federativo_responsavel"
 }
+
+SCHEMA_EMPRESAS = {v: pl.String for v in MAPEAMENTO_COLUNAS.values()}
+SCHEMA_EMPRESAS["natureza_juridica"] = pl.Int32
+SCHEMA_EMPRESAS["qualificacao_responsavel"] = pl.Int32
+SCHEMA_EMPRESAS["porte_empresa"] = pl.Int8
+SCHEMA_EMPRESAS["capital_social"] = pl.Float64
+SCHEMA_EMPRESAS["referencia_mes"] = pl.Int32
+SCHEMA_EMPRESAS["_source_file"] = pl.String
+SCHEMA_EMPRESAS["_inserted_at"] = pl.Datetime("us", "UTC")
 
 def arquivo_ja_existe_no_silver(s3_client, chave_destino):
     try:
@@ -90,7 +100,7 @@ def baixar_arquivo_verificado(s3_client, bucket, chave_s3, path_local, max_tenta
     raise IOError(f"Failed to download {chave_s3} fully after {max_tentativas} attempts.")
 
 def processar_um_arquivo_com_retry(s3_client, chave_s3, chave_destino, max_tentativas=2):
-    nome_arq = os.path.basename(chave_s3).lower()
+    nome_arq = os.path.basename(chave_s3)
     path_local_bronze = os.path.join(PASTA_TMP, f"bronze_{nome_arq}")
     path_local_silver = os.path.join(PASTA_TMP, f"silver_{nome_arq}")
 
@@ -112,7 +122,11 @@ def processar_um_arquivo_com_retry(s3_client, chave_s3, chave_destino, max_tenta
                 for batch in parquet_file.iter_batches(batch_size=TAMANHO_LOTE):
                     df_lote = pl.from_arrow(batch)
                     df_lote = transformar_lote(df_lote)
-
+                    df_lote = adicionar_colunas_auditoria(df_lote, nome_arq)
+                    
+                    df_lote = df_lote.select(list(SCHEMA_EMPRESAS.keys()))
+                    validar_schema_basico(df_lote, SCHEMA_EMPRESAS)
+                    
                     tabela_arrow = df_lote.to_arrow()
 
                     if writer is None:
@@ -152,11 +166,14 @@ def processar_um_arquivo_com_retry(s3_client, chave_s3, chave_destino, max_tenta
 def processar_empresas_seguro(s3_client):
     logger.info("Starting Empresas pipeline (Bronze -> Silver) in batched mode.")
 
-    prefixo_bronze = f"rfb/ref{REFERENCIA.replace('-', '')}/"
+    ref_partition = REFERENCIA.replace('-', '')
+    entity = "empresas"
+    prefixo_bronze = f"rfb/{entity}/ref_month={ref_partition}/"
+    
     res = s3_client.list_objects_v2(Bucket=BUCKET_BRONZE, Prefix=prefixo_bronze)
     arquivos = sorted([
         obj["Key"] for obj in res.get("Contents", [])
-        if "Empresas" in obj["Key"] and obj["Key"].endswith(".parquet")
+        if obj["Key"].endswith(".parquet")
     ])
 
     if not arquivos:
@@ -170,8 +187,8 @@ def processar_empresas_seguro(s3_client):
     skipped_count = 0
 
     for chave_s3 in arquivos:
-        nome_arq = os.path.basename(chave_s3).lower()
-        chave_destino = f"rfb/ref{REFERENCIA.replace('-', '')}/{nome_arq}"
+        nome_arq = os.path.basename(chave_s3)
+        chave_destino = f"rfb/{entity}/ref_month={ref_partition}/{nome_arq}"
 
         if not FORCAR_REPROCESSAMENTO and arquivo_ja_existe_no_silver(s3_client, chave_destino):
             logger.info(f"Skipping empresas ({nome_arq}): already exists in s3://{BUCKET_SILVER}/{chave_destino}")

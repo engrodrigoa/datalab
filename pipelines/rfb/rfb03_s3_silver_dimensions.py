@@ -17,6 +17,7 @@ from pipelines.commons.env_loader import (
 )
 from pipelines.commons.s3_client import get_s3_client
 from pipelines.commons.logger import get_logger
+from pipelines.commons.rfb_silver_contract import adicionar_colunas_auditoria, validar_schema_basico
 
 logger = get_logger("rfb_silver_dims")
 
@@ -30,15 +31,11 @@ BUCKET_BRONZE = "bronze"
 BUCKET_SILVER = "silver"
 PASTA_TMP = "/mnt/datasource/tmp_silver_auxiliares"
 
-# Se True (ou RFB_FORCAR_REPROCESSAMENTO=1 no ambiente), reprocessa mesmo que
-# o arquivo já exista no silver. Útil para forçar uma nova carga manualmente.
 FORCAR_REPROCESSAMENTO = os.getenv("RFB_FORCAR_REPROCESSAMENTO", "0") == "1"
 
 os.makedirs(PASTA_TMP, exist_ok=True)
 
-
 def arquivo_ja_existe_no_silver(s3_client, chave_destino):
-    """Verifica via head_object se a chave já existe no bucket silver, sem baixar o conteúdo."""
     try:
         s3_client.head_object(Bucket=BUCKET_SILVER, Key=chave_destino)
         return True
@@ -46,29 +43,28 @@ def arquivo_ja_existe_no_silver(s3_client, chave_destino):
         codigo = e.response.get("Error", {}).get("Code", "")
         if codigo in ("404", "NoSuchKey", "NotFound"):
             return False
-        # Outro tipo de erro (permissão, rede, etc.) não deve ser silenciado como "não existe".
         raise
 
-
 def processar_tabela_codigo_descricao(s3_client, nome_entidade):
-    prefixo_bronze = f"rfb/ref{REFERENCIA.replace('-', '')}/"
+    ref_partition = REFERENCIA.replace('-', '')
+    prefixo_bronze = f"rfb/{nome_entidade}/ref_month={ref_partition}/"
     res = s3_client.list_objects_v2(Bucket=BUCKET_BRONZE, Prefix=prefixo_bronze)
     
     arquivos = [
         obj["Key"] for obj in res.get("Contents", [])
-        if nome_entidade.lower() in obj["Key"].lower() and obj["Key"].endswith(".parquet")
+        if obj["Key"].endswith(".parquet")
     ]
 
     processed_count = 0
     skipped_count = 0
     for chave_s3 in arquivos:
-        nome_arq = os.path.basename(chave_s3).lower()
+        nome_arq = os.path.basename(chave_s3)
         path_local_bronze = os.path.join(PASTA_TMP, f"bronze_{nome_arq}")
         path_local_silver = os.path.join(PASTA_TMP, f"silver_{nome_arq}")
-        chave_destino = f"rfb/ref{REFERENCIA.replace('-', '')}/{nome_arq}"
+        chave_destino = f"rfb/{nome_entidade}/ref_month={ref_partition}/{nome_arq}"
 
         if not FORCAR_REPROCESSAMENTO and arquivo_ja_existe_no_silver(s3_client, chave_destino):
-            logger.info(f"Skipping {nome_entidade} ({nome_arq}): já existe em s3://{BUCKET_SILVER}/{chave_destino}")
+            logger.info(f"Skipping dimension {nome_entidade} ({nome_arq}): already exists in s3://{BUCKET_SILVER}/{chave_destino}")
             skipped_count += 1
             continue
 
@@ -88,6 +84,19 @@ def processar_tabela_codigo_descricao(s3_client, nome_entidade):
                 pl.col("descricao").str.strip_chars().replace("", None)
             ])
 
+        df_silver = adicionar_colunas_auditoria(df_silver, nome_arq)
+        
+        schema_esperado = {
+            "codigo": pl.String if nome_entidade.lower() == "cnaes" else pl.Int32,
+            "descricao": pl.String,
+            "referencia_mes": pl.Int32,
+            "_source_file": pl.String,
+            "_inserted_at": pl.Datetime("us", "UTC")
+        }
+        
+        df_silver = df_silver.select(list(schema_esperado.keys()))
+        validar_schema_basico(df_silver, schema_esperado)
+
         logger.info(f"Writing dimension parquet to local temp and uploading to s3://{BUCKET_SILVER}/{chave_destino}")
         df_silver.write_parquet(path_local_silver, compression="snappy")
         
@@ -106,22 +115,16 @@ def processar_tabela_codigo_descricao(s3_client, nome_entidade):
     return processed_count, skipped_count
 
 def processar_simples(s3_client, tamanho_lote=500_000):
-    """
-    Processa o arquivo Simples em lotes fixos de linhas usando pyarrow.parquet
-    diretamente (ParquetFile.iter_batches + ParquetWriter), em vez de depender
-    do sink_parquet do Polars. Isso garante um teto de memória previsível
-    (proporcional a `tamanho_lote`), independente do tamanho total do arquivo,
-    já que scan_parquet + sink_parquet do Polars pode materializar o dataframe
-    inteiro em memória quando o pipeline de transformações não é 100% "streamable".
-    """
     import pyarrow.parquet as pq
 
-    prefixo_bronze = f"rfb/ref{REFERENCIA.replace('-', '')}/"
+    nome_entidade = "simples"
+    ref_partition = REFERENCIA.replace('-', '')
+    prefixo_bronze = f"rfb/{nome_entidade}/ref_month={ref_partition}/"
     res = s3_client.list_objects_v2(Bucket=BUCKET_BRONZE, Prefix=prefixo_bronze)
 
     arquivos = [
         obj["Key"] for obj in res.get("Contents", [])
-        if "simples" in obj["Key"].lower() and obj["Key"].endswith(".parquet")
+        if obj["Key"].endswith(".parquet")
     ]
 
     mapeamento_simples = {
@@ -137,31 +140,28 @@ def processar_simples(s3_client, tamanho_lote=500_000):
     processed_count = 0
     skipped_count = 0
     for chave_s3 in arquivos:
-        nome_arq = os.path.basename(chave_s3).lower()
+        nome_arq = os.path.basename(chave_s3)
         path_local_bronze = os.path.join(PASTA_TMP, f"bronze_{nome_arq}")
         path_local_silver = os.path.join(PASTA_TMP, f"silver_{nome_arq}")
-        chave_destino = f"rfb/ref{REFERENCIA.replace('-', '')}/{nome_arq}"
+        chave_destino = f"rfb/{nome_entidade}/ref_month={ref_partition}/{nome_arq}"
 
         if not FORCAR_REPROCESSAMENTO and arquivo_ja_existe_no_silver(s3_client, chave_destino):
-            logger.info(f"Skipping simples ({nome_arq}): já existe em s3://{BUCKET_SILVER}/{chave_destino}")
+            logger.info(f"Skipping dimension simples ({nome_arq}): already exists in s3://{BUCKET_SILVER}/{chave_destino}")
             skipped_count += 1
             continue
 
-        logger.info(f"Processing dimension simples in batched mode ({nome_arq}, lotes de {tamanho_lote} linhas)...")
+        logger.info(f"Processing dimension simples in batched mode ({nome_arq}, batch size {tamanho_lote})...")
         s3_client.download_file(BUCKET_BRONZE, chave_s3, path_local_bronze)
 
         parquet_file = pq.ParquetFile(path_local_bronze)
         total_linhas = parquet_file.metadata.num_rows
-        logger.info(f"Total de linhas em {nome_arq}: {total_linhas}")
+        logger.info(f"Total rows in {nome_arq}: {total_linhas}")
 
         writer = None
         linhas_processadas = 0
 
         try:
             for batch in parquet_file.iter_batches(batch_size=tamanho_lote):
-                # Converte o RecordBatch do pyarrow em um DataFrame Polars,
-                # aplica as mesmas transformações de antes, e volta pra arrow
-                # já pronto para escrever incrementalmente.
                 df_lote = pl.from_arrow(batch).rename(mapeamento_simples)
 
                 df_lote = df_lote.with_columns([
@@ -173,6 +173,24 @@ def processar_simples(s3_client, tamanho_lote=500_000):
                     pl.col("data_opcao_mei").str.to_date(format="%Y%m%d", strict=False),
                     pl.col("data_exclusao_mei").str.to_date(format="%Y%m%d", strict=False),
                 ])
+                
+                df_lote = adicionar_colunas_auditoria(df_lote, nome_arq)
+                
+                schema_esperado = {
+                    "cnpj_basico": pl.String,
+                    "opcao_simples": pl.String,
+                    "data_opcao_simples": pl.Date,
+                    "data_exclusao_simples": pl.Date,
+                    "opcao_mei": pl.String,
+                    "data_opcao_mei": pl.Date,
+                    "data_exclusao_mei": pl.Date,
+                    "referencia_mes": pl.Int32,
+                    "_source_file": pl.String,
+                    "_inserted_at": pl.Datetime("us", "UTC")
+                }
+                
+                df_lote = df_lote.select(list(schema_esperado.keys()))
+                validar_schema_basico(df_lote, schema_esperado)
 
                 tabela_arrow = df_lote.to_arrow()
 
@@ -182,7 +200,7 @@ def processar_simples(s3_client, tamanho_lote=500_000):
                 writer.write_table(tabela_arrow)
 
                 linhas_processadas += df_lote.height
-                logger.info(f"  ... {linhas_processadas}/{total_linhas} linhas processadas ({nome_arq})")
+                logger.info(f"  ... {linhas_processadas}/{total_linhas} rows processed ({nome_arq})")
 
                 del df_lote
                 del tabela_arrow

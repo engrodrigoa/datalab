@@ -18,6 +18,7 @@ from pipelines.commons.env_loader import (
 )
 from pipelines.commons.s3_client import get_s3_client
 from pipelines.commons.logger import get_logger
+from pipelines.commons.rfb_silver_contract import adicionar_colunas_auditoria, validar_schema_basico
 
 logger = get_logger("rfb_silver_estabelecimentos")
 
@@ -47,6 +48,20 @@ MAPEAMENTO_COLUNAS = {
     "f23": "ddd_2", "f24": "telefone_2", "f25": "ddd_fax", "f26": "fax",
     "f27": "correio_eletronico", "f28": "situacao_especial", "f29": "data_situacao_especial"
 }
+
+SCHEMA_ESTABELECIMENTOS = {v: pl.String for v in MAPEAMENTO_COLUNAS.values()}
+SCHEMA_ESTABELECIMENTOS["cnpj_completo"] = pl.String
+SCHEMA_ESTABELECIMENTOS["identificador_matriz_filial"] = pl.Int8
+SCHEMA_ESTABELECIMENTOS["situacao_cadastral"] = pl.Int8
+SCHEMA_ESTABELECIMENTOS["motivo_situacao_cadastral"] = pl.Int32
+SCHEMA_ESTABELECIMENTOS["pais"] = pl.Int32
+SCHEMA_ESTABELECIMENTOS["municipio"] = pl.Int32
+SCHEMA_ESTABELECIMENTOS["data_situacao_cadastral"] = pl.Date
+SCHEMA_ESTABELECIMENTOS["data_inicio_atividade"] = pl.Date
+SCHEMA_ESTABELECIMENTOS["data_situacao_especial"] = pl.Date
+SCHEMA_ESTABELECIMENTOS["referencia_mes"] = pl.Int32
+SCHEMA_ESTABELECIMENTOS["_source_file"] = pl.String
+SCHEMA_ESTABELECIMENTOS["_inserted_at"] = pl.Datetime("us", "UTC")
 
 def arquivo_ja_existe_no_silver(s3_client, chave_destino):
     try:
@@ -103,34 +118,34 @@ def baixar_arquivo_verificado(s3_client, bucket, chave_s3, path_local, max_tenta
             return
 
         logger.warning(
-            f"Download incompleto de {chave_s3} (tentativa {tentativa}/{max_tentativas}): "
-            f"esperado {tamanho_esperado} bytes, recebido {tamanho_baixado} bytes. Tentando novamente..."
+            f"Incomplete download of {chave_s3} (attempt {tentativa}/{max_tentativas}): "
+            f"expected {tamanho_esperado} bytes, got {tamanho_baixado} bytes. Retrying..."
         )
         if os.path.exists(path_local):
             os.remove(path_local)
         time.sleep(2 ** tentativa)
 
     raise IOError(
-        f"Falha ao baixar {chave_s3} integralmente após {max_tentativas} tentativas "
-        f"(esperado {tamanho_esperado} bytes)."
+        f"Failed to download {chave_s3} fully after {max_tentativas} attempts "
+        f"(expected {tamanho_esperado} bytes)."
     )
 
 def processar_um_arquivo_com_retry(s3_client, chave_s3, chave_destino, max_tentativas=2):
-    nome_arq = os.path.basename(chave_s3).lower()
+    nome_arq = os.path.basename(chave_s3)
     path_local_bronze = os.path.join(PASTA_TMP, f"bronze_{nome_arq}")
     path_local_silver = os.path.join(PASTA_TMP, f"silver_{nome_arq}")
 
     ultimo_erro = None
     for tentativa in range(1, max_tentativas + 1):
         try:
-            logger.info(f"Processing dimension estabelecimentos in batched mode ({nome_arq}, lotes de {TAMANHO_LOTE} linhas, tentativa {tentativa}/{max_tentativas})...")
+            logger.info(f"Processing dimension estabelecimentos in batched mode ({nome_arq}, batch size {TAMANHO_LOTE}, attempt {tentativa}/{max_tentativas})...")
 
             baixar_arquivo_verificado(s3_client, BUCKET_BRONZE, chave_s3, path_local_bronze)
-            logger.info(f"Download concluído e verificado: s3://{BUCKET_BRONZE}/{chave_s3} -> {path_local_bronze}")
+            logger.info(f"Download completed and verified: s3://{BUCKET_BRONZE}/{chave_s3} -> {path_local_bronze}")
 
             parquet_file = pq.ParquetFile(path_local_bronze)
             total_linhas = parquet_file.metadata.num_rows
-            logger.info(f"Total de linhas em {nome_arq}: {total_linhas}")
+            logger.info(f"Total rows in {nome_arq}: {total_linhas}")
 
             writer = None
             linhas_processadas = 0
@@ -139,7 +154,11 @@ def processar_um_arquivo_com_retry(s3_client, chave_s3, chave_destino, max_tenta
                 for batch in parquet_file.iter_batches(batch_size=TAMANHO_LOTE):
                     df_lote = pl.from_arrow(batch)
                     df_lote = transformar_lote(df_lote)
-
+                    df_lote = adicionar_colunas_auditoria(df_lote, nome_arq)
+                    
+                    df_lote = df_lote.select(list(SCHEMA_ESTABELECIMENTOS.keys()))
+                    validar_schema_basico(df_lote, SCHEMA_ESTABELECIMENTOS)
+                    
                     tabela_arrow = df_lote.to_arrow()
 
                     if writer is None:
@@ -148,7 +167,7 @@ def processar_um_arquivo_com_retry(s3_client, chave_s3, chave_destino, max_tenta
                     writer.write_table(tabela_arrow)
 
                     linhas_processadas += df_lote.height
-                    logger.info(f"  ... {linhas_processadas}/{total_linhas} linhas processadas ({nome_arq})")
+                    logger.info(f"  ... {linhas_processadas}/{total_linhas} rows processed ({nome_arq})")
 
                     del df_lote
                     del tabela_arrow
@@ -166,8 +185,8 @@ def processar_um_arquivo_com_retry(s3_client, chave_s3, chave_destino, max_tenta
         except OSError as e:
             ultimo_erro = e
             logger.error(
-                f"Dados corrompidos ao processar {nome_arq} (tentativa {tentativa}/{max_tentativas}): {e}. "
-                f"Descartando arquivo local e tentando novamente do zero."
+                f"Corrupted data while processing {nome_arq} (attempt {tentativa}/{max_tentativas}): {e}. "
+                f"Discarding local file and retrying."
             )
         finally:
             if os.path.exists(path_local_bronze):
@@ -176,35 +195,38 @@ def processar_um_arquivo_com_retry(s3_client, chave_s3, chave_destino, max_tenta
                 os.remove(path_local_silver)
             gc.collect()
 
-    logger.exception(f"Falha definitiva ao processar o arquivo {nome_arq} após {max_tentativas} tentativas.")
+    logger.exception(f"Fatal error processing file {nome_arq} after {max_tentativas} attempts.")
     raise ultimo_erro
 
 def processar_estabelecimentos_seguro(s3_client):
-    logger.info("Iniciando pipeline de Estabelecimentos (Bronze -> Silver) em modo batched.")
+    logger.info("Starting Estabelecimentos pipeline (Bronze -> Silver) in batched mode.")
 
-    prefixo_bronze = f"rfb/ref{REFERENCIA.replace('-', '')}/"
+    ref_partition = REFERENCIA.replace('-', '')
+    entity = "estabelecimentos"
+    prefixo_bronze = f"rfb/{entity}/ref_month={ref_partition}/"
+    
     res = s3_client.list_objects_v2(Bucket=BUCKET_BRONZE, Prefix=prefixo_bronze)
     arquivos = sorted([
         obj["Key"] for obj in res.get("Contents", [])
-        if "Estabelecimentos" in obj["Key"] and obj["Key"].endswith(".parquet")
+        if obj["Key"].endswith(".parquet")
     ])
 
     if not arquivos:
-        logger.warning(f"Nenhum arquivo de Estabelecimentos encontrado em s3://{BUCKET_BRONZE}/{prefixo_bronze}")
+        logger.warning(f"No Estabelecimentos files found in s3://{BUCKET_BRONZE}/{prefixo_bronze}")
         return 0
 
-    logger.info(f"{len(arquivos)} arquivo(s) de Estabelecimentos encontrados para processar.")
+    logger.info(f"Found {len(arquivos)} Estabelecimentos files to process.")
 
     total_arquivos_processados = 0
     total_linhas_processadas_geral = 0
     skipped_count = 0
 
     for chave_s3 in arquivos:
-        nome_arq = os.path.basename(chave_s3).lower()
-        chave_destino = f"rfb/ref{REFERENCIA.replace('-', '')}/{nome_arq}"
+        nome_arq = os.path.basename(chave_s3)
+        chave_destino = f"rfb/{entity}/ref_month={ref_partition}/{nome_arq}"
 
         if not FORCAR_REPROCESSAMENTO and arquivo_ja_existe_no_silver(s3_client, chave_destino):
-            logger.info(f"Skipping estabelecimentos ({nome_arq}): já existe em s3://{BUCKET_SILVER}/{chave_destino}")
+            logger.info(f"Skipping estabelecimentos ({nome_arq}): already exists in s3://{BUCKET_SILVER}/{chave_destino}")
             skipped_count += 1
             continue
 
@@ -215,8 +237,8 @@ def processar_estabelecimentos_seguro(s3_client):
 
     logger.info("==================================================================")
     logger.info(
-        f"PIPELINE EXECUTION COMPLETED: {total_arquivos_processados} arquivo(s) de Estabelecimentos "
-        f"processados, {skipped_count} skipped (already in Silver layer)."
+        f"PIPELINE EXECUTION COMPLETED: {total_arquivos_processados} Estabelecimentos files "
+        f"processed, {skipped_count} skipped (already in Silver layer)."
     )
     logger.info("==================================================================")
 
