@@ -256,6 +256,7 @@ def _create_schemas():
         """
         CREATE SCHEMA IF NOT EXISTS ctrl;
         CREATE SCHEMA IF NOT EXISTS audit;
+        CREATE SCHEMA IF NOT EXISTS landing_rfb;
         CREATE SCHEMA IF NOT EXISTS bronze;
         CREATE SCHEMA IF NOT EXISTS silver;
         CREATE SCHEMA IF NOT EXISTS gold;

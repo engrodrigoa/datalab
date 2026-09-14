@@ -50,7 +50,7 @@ with DAG(
 
     task_extract_to_bronze = BashOperator(
         task_id="task_extract_to_bronze",
-        bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb02_extract_zip.py",
+        bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb02_s3_unzip_bronze.py",
         execution_timeout=timedelta(minutes=260),
     )
 
@@ -78,6 +78,40 @@ with DAG(
         execution_timeout=timedelta(minutes=260),
     )
 
+    #DW LANDING
+    task_load_dw_landing_estabelecimentos = BashOperator(
+            task_id="task_load_dw_landing_estabelecimentos",
+            bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb07_dw_landing_estabelecimentos.py",
+            execution_timeout=timedelta(minutes=260),
+    )
+
+    task_load_dw_landing_empresas = BashOperator(
+                task_id="task_load_dw_landing_empresas",
+                bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb08_dw_landing_empresas.py",
+                execution_timeout=timedelta(minutes=260),
+        )
+
+    task_load_dw_landing_socios = BashOperator(
+                task_id="task_load_dw_landing_socios",
+                bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb09_dw_landing_socios.py",
+                execution_timeout=timedelta(minutes=260),
+        )
+
+    task_load_dw_landing_simples = BashOperator(
+                task_id="task_load_dw_landing_simples",
+                bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb10_dw_landing_simples.py",
+                execution_timeout=timedelta(minutes=260),
+        )
+
+    task_load_dw_landing_dimensions = BashOperator(
+                task_id="task_load_dw_landing_dimensions",
+                bash_command="python3 -u /opt/airflow/pipelines/rfb/rfb11_dw_landing_dimensions.py",
+                execution_timeout=timedelta(minutes=260),
+        )
+    
+
+   
+
     end = PythonOperator(
         task_id="end",
         python_callable=consolidate_dag_audit_logs,
@@ -93,5 +127,10 @@ with DAG(
         >> task_load_s3_silver_estabelecimentos
         >> task_load_s3_silver_empresas
         >> task_load_s3_silver_socios
+        >> task_load_dw_landing_estabelecimentos
+        >> task_load_dw_landing_empresas
+        >> task_load_dw_landing_socios
+        >> task_load_dw_landing_simples
+        >> task_load_dw_landing_dimensions
         >> end
     )
