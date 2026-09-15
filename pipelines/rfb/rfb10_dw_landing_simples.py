@@ -46,15 +46,15 @@ CREATE TABLE IF NOT EXISTS {SCHEMA_LANDING}.{TABELA_LANDING} (
 # "Code" columns that must be widened to TEXT if the table already exists
 # from a previous run with stricter types.
 COLUNAS_PARA_TEXT = [
-    "cnpj_basico", "opcao_pelo_simples", "opcao_mei",
+    "cnpj_basico",
 ]
 
-# Expected RFB field lengths, used only to flag suspicious rows (column-shift
-# detection) -- never to drop them.
+# Limit validation only on free-text fields that are truly strings and can
+# suffer column-shift corruption. opcao_pelo_simples and opcao_mei are typically
+# single-char codes that come from Silver as strings or single-value codes,
+# but if they come as integers, this will be safely skipped.
 LIMITES_SUSPEITA = {
     "cnpj_basico": 8,
-    "opcao_pelo_simples": 1,
-    "opcao_mei": 1,
 }
 
 

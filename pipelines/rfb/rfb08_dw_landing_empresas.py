@@ -44,18 +44,19 @@ CREATE TABLE IF NOT EXISTS {SCHEMA_LANDING}.{TABELA_LANDING} (
 """
 
 # "Code" columns that must be widened to TEXT if the table already exists
-# from a previous run with stricter types.
+# from a previous run with stricter types. Note: in Silver, natureza_juridica,
+# qualificacao_responsavel, and porte_empresa often come as i32, not text --
+# so they won't be checked by marcar_linhas_suspeitas, which only validates
+# string columns. This is fine; those are small-domain codes unlikely to suffer
+# column-shift corruption like free-text fields (cnpj_basico, razao_social).
 COLUNAS_PARA_TEXT = [
-    "cnpj_basico", "natureza_juridica", "qualificacao_responsavel", "porte_empresa",
+    "cnpj_basico",
 ]
 
-# Expected RFB field lengths, used only to flag suspicious rows (column-shift
-# detection) -- never to drop them.
+# Limit validation only on free-text fields that are truly strings and can
+# suffer column-shift corruption.
 LIMITES_SUSPEITA = {
     "cnpj_basico": 8,
-    "natureza_juridica": 4,
-    "qualificacao_responsavel": 2,
-    "porte_empresa": 2,
 }
 
 

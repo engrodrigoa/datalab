@@ -30,16 +30,16 @@ CREATE SCHEMA IF NOT EXISTS {SCHEMA_LANDING};
 
 CREATE TABLE IF NOT EXISTS {SCHEMA_LANDING}.{TABELA_LANDING} (
     cnpj_basico TEXT,
-    identificador_socio TEXT,
+    identificador_socio SMALLINT,
     nome_socio_razao_social TEXT,
-    cpf_cnpj_socio TEXT,
-    qualificacao_socio TEXT,
+    cnpj_cpf_socio TEXT,
+    qualificacao_socio INTEGER,
     data_entrada_sociedade DATE,
-    pais TEXT,
+    pais INTEGER,
     representante_legal TEXT,
     nome_representante TEXT,
-    qualificacao_representante_legal TEXT,
-    faixa_etaria TEXT,
+    qualificacao_representante_legal INTEGER,
+    faixa_etaria SMALLINT,
     referencia_mes INTEGER,
     _source_file TEXT,
     _inserted_at TIMESTAMPTZ,
@@ -50,21 +50,15 @@ CREATE TABLE IF NOT EXISTS {SCHEMA_LANDING}.{TABELA_LANDING} (
 # "Code" columns that must be widened to TEXT if the table already exists
 # from a previous run with stricter types.
 COLUNAS_PARA_TEXT = [
-    "cnpj_basico", "identificador_socio", "cpf_cnpj_socio", "qualificacao_socio",
-    "pais", "representante_legal", "qualificacao_representante_legal", "faixa_etaria",
+    "cnpj_basico", "cnpj_cpf_socio",
 ]
 
-# Expected RFB field lengths, used only to flag suspicious rows (column-shift
-# detection) -- never to drop them.
+# Limit validation only on free-text fields that are truly strings and can
+# suffer column-shift corruption. Skip numeric codes (identificador_socio,
+# qualificacao_socio, pais, etc.) which come from Silver as integers.
 LIMITES_SUSPEITA = {
     "cnpj_basico": 8,
-    "identificador_socio": 1,
-    "cpf_cnpj_socio": 14,
-    "qualificacao_socio": 2,
-    "pais": 3,
-    "representante_legal": 11,
-    "qualificacao_representante_legal": 2,
-    "faixa_etaria": 1,
+    "cnpj_cpf_socio": 14,
 }
 
 

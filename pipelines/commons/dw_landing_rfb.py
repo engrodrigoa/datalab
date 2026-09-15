@@ -68,13 +68,15 @@ def marcar_linhas_suspeitas(df: pl.DataFrame, limites: dict) -> pl.DataFrame:
     exceeds the max length expected by the RFB layout (a symptom of a column
     shift inherited from Bronze/Silver parsing). Never removes any row --
     correction/exclusion is a decision for downstream (dbt) layers, not landing.
+    
+    Robustly skips columns that don't exist or aren't strings (e.g., if a field
+    like natureza_juridica comes from Silver as i32 instead of text, we just
+    don't validate it).
     """
-    if not limites:
-        return df.with_columns(pl.lit(False).alias("_suspeita_deslocamento"))
-
     condicao_suspeita = pl.lit(False)
-    for coluna, limite in limites.items():
-        if coluna in df.columns:
+    for coluna, limite in (limites or {}).items():
+        # Only attempt validation on columns that exist AND are strings.
+        if coluna in df.columns and df.schema[coluna] == pl.Utf8:
             condicao_suspeita = condicao_suspeita | (
                 pl.col(coluna).str.len_chars().fill_null(0) > limite
             )
@@ -87,26 +89,51 @@ def preparar_schema_tabela(engine, schema, tabela, ddl, colunas_para_text, ref_m
     columns to TEXT (idempotent -- needed if the table already exists from a
     previous run with stricter types), ensures the flag column exists, and
     clears the target partition (referencia_mes) so reprocessing is idempotent.
+    
+    Uses explicit statement timeout to prevent zombie sessions if something
+    hangs (e.g., ALTER TABLE waiting for lock).
     """
     logger.info(f"Validating schema/table and cleaning partition {ref_mes_int} for {schema}.{tabela}")
-    with engine.begin() as conn:
-        conn.execute(text(ddl))
+    
+    conn = engine.raw_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SET statement_timeout = '30min'")
+            
+            logger.info(f"  Creating schema/table via DDL...")
+            cur.execute(ddl)
 
-        for coluna in colunas_para_text:
-            conn.execute(text(
-                f"ALTER TABLE {schema}.{tabela} ALTER COLUMN {coluna} TYPE TEXT"
-            ))
-        conn.execute(text(
-            f"ALTER TABLE {schema}.{tabela} "
-            f"ADD COLUMN IF NOT EXISTS _suspeita_deslocamento BOOLEAN DEFAULT FALSE"
-        ))
+            logger.info(f"  Widening text columns...")
+            for coluna in colunas_para_text:
+                cur.execute(
+                    f"ALTER TABLE {schema}.{tabela} ALTER COLUMN {coluna} TYPE TEXT"
+                )
+            
+            logger.info(f"  Ensuring flag column exists...")
+            cur.execute(
+                f"ALTER TABLE {schema}.{tabela} "
+                f"ADD COLUMN IF NOT EXISTS _suspeita_deslocamento BOOLEAN DEFAULT FALSE"
+            )
 
-        registros_deletados = conn.execute(
-            text(f"DELETE FROM {schema}.{tabela} WHERE referencia_mes = :ref_mes"),
-            {"ref_mes": ref_mes_int}
-        ).rowcount
-        if registros_deletados > 0:
-            logger.info(f"Removed {registros_deletados} existing row(s) from partition {ref_mes_int}.")
+            logger.info(f"  Clearing partition {ref_mes_int}...")
+            cur.execute(
+                f"DELETE FROM {schema}.{tabela} WHERE referencia_mes = %s",
+                (ref_mes_int,)
+            )
+            registros_deletados = cur.rowcount
+            if registros_deletados > 0:
+                logger.info(f"Removed {registros_deletados} existing row(s) from partition {ref_mes_int}.")
+        
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Error preparing schema/table {schema}.{tabela}: {e}")
+        raise e
+    finally:
+        try:
+            conn.close()
+        except Exception as close_err:
+            logger.warning(f"Error closing connection after schema prep: {close_err}")
 
 
 def sanitizar_nul_bytes(df: pl.DataFrame) -> pl.DataFrame:
@@ -132,6 +159,9 @@ def inserir_dataframe_bulk_copy(df: pl.DataFrame, engine, schema, tabela, pasta_
     COPY FROM STDIN. Do NOT use quote_style="always": Postgres only treats an
     empty field as NULL when it is unquoted; forcing quotes on every field
     turns each NULL into a literal '""' value, which breaks numeric/date columns.
+    
+    Uses a raw connection with explicit timeout to prevent zombie "idle in
+    transaction" sessions if the COPY fails or the client dies mid-stream.
     """
     df = sanitizar_nul_bytes(df)
 
@@ -147,7 +177,10 @@ def inserir_dataframe_bulk_copy(df: pl.DataFrame, engine, schema, tabela, pasta_
 
     conn = engine.raw_connection()
     try:
+        # Set a statement timeout to prevent zombie sessions if client dies mid-COPY.
+        # 2 hours is ~safe for even multi-million row COPY in batch mode; adjust if needed.
         with conn.cursor() as cur:
+            cur.execute("SET statement_timeout = '2h'")
             cur.copy_expert(copy_sql, buffer)
         conn.commit()
     except Exception as e:
@@ -163,7 +196,10 @@ def inserir_dataframe_bulk_copy(df: pl.DataFrame, engine, schema, tabela, pasta_
             logger.error(f"Failed to save debug batch: {dump_err}")
         raise e
     finally:
-        conn.close()
+        try:
+            conn.close()
+        except Exception as close_err:
+            logger.warning(f"Error closing connection after COPY: {close_err}")
 
 
 def processar_arquivos_landing(
@@ -204,7 +240,7 @@ def processar_arquivos_landing(
 
         parquet_file = pq.ParquetFile(path_local)
         total_linhas_arquivo = parquet_file.metadata.num_rows
-        logger.info(f">>> starting copy of {nome_arq} into Postgres (total: {total_linhas_arquivo} rows)")
+        logger.info(f">>> starting copy of {nome_arq} into data warehouse with {total_linhas_arquivo} rows)")
 
         linhas_processadas = 0
         for batch in parquet_file.iter_batches(batch_size=tamanho_lote):
@@ -224,14 +260,14 @@ def processar_arquivos_landing(
             inserir_dataframe_bulk_copy(df_lote, engine, schema, tabela, pasta_tmp, logger)
 
             linhas_processadas += df_lote.height
-            logger.info(f">>> inserted batch {linhas_processadas}/{total_linhas_arquivo} rows")
+            logger.info(f"[!] inserted batch with {linhas_processadas}/{total_linhas_arquivo} rows")
 
             del df_lote
             gc.collect()
 
         total_linhas_geral += linhas_processadas
         os.remove(path_local)
-        logger.info(f">>> file {nome_arq} done")
+        logger.info(f">>> >>> file {nome_arq} done")
 
     if total_suspeitas_geral > 0:
         logger.warning(

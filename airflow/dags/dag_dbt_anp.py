@@ -57,7 +57,7 @@ with DAG(
     """,
     default_args=default_args,
     description="Orquestração em camadas da ANP com Cosmos e Elementary",
-    schedule_interval="0 6 * * 1",
+    schedule_interval=None,
     start_date=datetime(2026, 1, 1),
     catchup=False,
     tags=[
