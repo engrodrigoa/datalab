@@ -30,7 +30,7 @@ CREATE SCHEMA IF NOT EXISTS {SCHEMA_LANDING};
 
 CREATE TABLE IF NOT EXISTS {SCHEMA_LANDING}.{TABELA_LANDING} (
     cnpj_basico TEXT,
-    opcao_pelo_simples TEXT,
+    opcao_simples TEXT,
     data_opcao_simples DATE,
     data_exclusao_simples DATE,
     opcao_mei TEXT,
@@ -46,13 +46,11 @@ CREATE TABLE IF NOT EXISTS {SCHEMA_LANDING}.{TABELA_LANDING} (
 # "Code" columns that must be widened to TEXT if the table already exists
 # from a previous run with stricter types.
 COLUNAS_PARA_TEXT = [
-    "cnpj_basico",
+    "cnpj_basico", "opcao_simples", "opcao_mei",
 ]
 
 # Limit validation only on free-text fields that are truly strings and can
-# suffer column-shift corruption. opcao_pelo_simples and opcao_mei are typically
-# single-char codes that come from Silver as strings or single-value codes,
-# but if they come as integers, this will be safely skipped.
+# suffer column-shift corruption. Skip numeric codes which come from Silver as integers.
 LIMITES_SUSPEITA = {
     "cnpj_basico": 8,
 }
